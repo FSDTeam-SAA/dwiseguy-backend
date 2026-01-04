@@ -7,6 +7,7 @@ import handleValidationError from '../errors/handleValidationError';
 import handleCastError from '../errors/handleCastErrror';
 import handleDuplicateError from '../errors/handleDuplicateKeyError';
 import AppError from '../errors/AppError';
+import config from '../config/config';
 // import { TErrorSources } from '../app/interface/error';
 // import handleZodError from '../app/errors/handleZodError';
 // import handleValidationError from '../app/errors/handleValidationError';
@@ -85,6 +86,6 @@ export const globalErrorHandler: ErrorRequestHandler = (
             message,
             errorSources,
             // error: err,
-            // stack: config.NODE_ENV === 'production' ? null : err.stack,
+            stack: config.env === 'development' ? err.stack : null,
       });
 };

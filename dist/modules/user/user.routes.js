@@ -9,5 +9,6 @@ const user_validation_1 = require("./user.validation");
 const validateRequest_middleware_1 = require("../../middlewares/validateRequest.middleware");
 const router = express_1.default.Router();
 router.post('/registration', (0, validateRequest_middleware_1.validateRequest)(user_validation_1.createUserSchema), user_controller_1.createUser);
+router.post('/login', (0, validateRequest_middleware_1.validateRequest)(user_validation_1.loginUserSchema), user_controller_1.loginUser);
 router.get('/', user_controller_1.getUsers);
 exports.default = router;
