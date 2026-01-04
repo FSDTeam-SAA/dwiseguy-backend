@@ -1,10 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { uploadToCloudinary } from '../../utils/cloudinary';
+import { userService } from './user.service';
+import { mailer } from '../../utils/sendEmail';
+import { forgetPasswordOtpTemplate } from '../../utils/email.templates';
 import AppError from '../../errors/AppError';
-import { TLoginUser } from './user.interface';
 import { User } from './user.model';
+
 
 // @desc    Create user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -54,10 +57,66 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
       });
 });
 
-export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
-      try {
-            res.json({ message: 'Get all users' });
-      } catch (err) {
-            next(err);
-      }
-};
+
+export const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) throw new AppError(StatusCodes.BAD_REQUEST, 'Email is required');
+
+  const user = await userService.findUserByEmail(email);
+  if (!user) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+
+  // STORE EMAIL IN SESSION
+  (req.session as any).resetEmail = email;
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+  // CRITICAL: Save to DB
+  await userService.saveOtpToDb(email, otp, expires);
+
+  // Send Email Logic... (mailer function)
+  
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'OTP sent to email',
+  });
+});
+
+export const verifyOtp = catchAsync(async (req: Request, res: Response) => {
+  const { otp } = req.body;
+  const email = (req.session as any).resetEmail; // Get from session
+
+  if (!email) throw new AppError(StatusCodes.BAD_REQUEST, 'Session expired. Enter email again.');
+  if (!otp) throw new AppError(StatusCodes.BAD_REQUEST, 'OTP is required');
+
+  const user = await userService.findUserByEmail(email);
+
+  if (!user || user.password_reset_Otp !== otp) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid OTP');
+  }
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'OTP verified successfully',
+  });
+});
+
+export const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { newPassword, confirmPassword } = req.body;
+  const email = (req.session as any).resetEmail;
+
+  if (!email) throw new AppError(StatusCodes.BAD_REQUEST, 'Session expired');
+  if (newPassword !== confirmPassword) throw new AppError(400, 'Passwords do not match');
+
+  await userService.updatePassword(email, newPassword);
+
+  req.session.destroy(() => {}); // Clear session on success
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset successful',
+  });
+});
