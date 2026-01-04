@@ -5,6 +5,7 @@ import { User } from './user.model';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import AppError from '../../errors/AppError';
 
+
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
       try {
             res.json({ message: 'Get all users' });
@@ -12,7 +13,6 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
             next(err);
       }
 };
-
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
       const value = req.body;
@@ -22,5 +22,4 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 
       sendResponse(res, { statusCode: 201, success: true, message: 'User created successfully', data: user });
 });
-
 

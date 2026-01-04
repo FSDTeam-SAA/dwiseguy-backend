@@ -48,7 +48,7 @@ export default {
       //Email
       email: {
             expires: Number(process.env.EMAIL_EXPIRES) || 900000,
-            host: process.env.EMAIL_HOST,
+            host: process.env.HOST_MAIL,
             port: Number(process.env.EMAIL_PORT) || 587,
             address: process.env.EMAIL_ADDRESS,
             password: process.env.EMAIL_PASS,
