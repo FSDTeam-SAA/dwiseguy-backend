@@ -8,31 +8,58 @@ cloudinary.config({
       api_secret: config.cloudinary.apiSecret,
 });
 
-export const uploadToCloudinary = async (localFilePath: string) => {
+/* =====================================
+   UPLOAD IMAGE / AUDIO
+===================================== */
+export const uploadToCloudinary = async (
+      localFilePath: string,
+      type: 'image' | 'audio' = 'image'
+): Promise<{ public_id: string; url: string; duration?: number | null; file_type?: string } | null> => {
       try {
             if (!localFilePath) return null;
 
+            const resourceType = type === 'audio' ? 'video' : 'image';
+            const folder = type === 'audio' ? 'piano/audio' : 'piano/images';
+
             const response = await cloudinary.uploader.upload(localFilePath, {
-                  resource_type: 'auto',
+                  resource_type: resourceType, // audio => video, image => image
+                  folder,
+                  quality: 'auto',
             });
+            console.log(localFilePath);
 
             // Remove file from local storage after upload
-            fs.unlinkSync(localFilePath);
+            if (localFilePath && fs.existsSync(localFilePath)) {
+                  fs.unlinkSync(localFilePath);
+            }
 
-            return response;
+            return {
+                  public_id: response.public_id,
+                  url: response.secure_url,
+                  duration: response?.duration || null, // only for audio
+                  file_type: response.format,
+            };
       } catch (error) {
             // Remove file from local storage if upload fails
-            if (fs.existsSync(localFilePath)) {
+            if (localFilePath && fs.existsSync(localFilePath)) {
                   fs.unlinkSync(localFilePath);
             }
             return null;
       }
 };
 
-export const deleteFromCloudinary = async (publicId: string) => {
+/* =====================================
+   DELETE IMAGE / AUDIO
+===================================== */
+export const deleteFromCloudinary = async (publicId: string, type: 'image' | 'audio' = 'image'): Promise<void> => {
       try {
             if (!publicId) return;
-            await cloudinary.uploader.destroy(publicId);
+
+            const resourceType = type === 'audio' ? 'video' : 'image';
+
+            await cloudinary.uploader.destroy(publicId, {
+                  resource_type: resourceType,
+            });
       } catch (error) {
             console.error('Error deleting from Cloudinary:', error);
       }
