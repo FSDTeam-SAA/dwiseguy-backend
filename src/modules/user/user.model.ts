@@ -2,11 +2,13 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser, UserModel } from './user.interface';
 import config from '../../config/config';
+import { Secret, SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 const userSchema: Schema = new Schema<IUser>(
       {
             name: { type: String, required: true },
-            email: { type: String, required: true, unique: true },
+            email: { type: String, required: true,lowercase: true, unique: true },
             password: { type: String, select: 0, required: true },
             username: { type: String, required: true, unique: true },
             phone: { type: String },
@@ -57,5 +59,6 @@ userSchema.statics.isOTPVerified = async function (id: string) {
 userSchema.statics.isPasswordMatched = async function (plainTextPassword: string, hashPassword: string) {
       return await bcrypt.compare(plainTextPassword, hashPassword);
 };
+
 
 export const User = mongoose.model<IUser, UserModel>('User', userSchema);

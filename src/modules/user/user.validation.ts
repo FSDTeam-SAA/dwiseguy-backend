@@ -50,3 +50,20 @@ export const updateUserSchema = z.object({
             avatar: avatarSchema.optional(),
       }),
 });
+
+
+// /login user validation schema
+export const loginUserSchema = z.object({
+      body: z.object({
+            email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Invalid email pattern'),
+            password: z
+                  .string()
+                  .min(6, 'Password must be at least 6 characters')
+                  .regex(
+                        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/,
+                        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+                  ),
+      }),
+})
+
+
