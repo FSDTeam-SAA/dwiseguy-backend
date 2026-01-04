@@ -6,19 +6,20 @@ export interface IUser extends Document {
       email: string;
       password?: string;
       username: string;
-      credit: number;
-      role: 'admin' | 'user' | 'driver';
+      role: 'admin' | 'user';
       verificationInfo: {
             verified: boolean;
-            token: string;
+            verificationOtp: number;
       };
       phone: string;
       avatar?: {
             public_id: string;
             url: string;
+            duration?: number;
+            file_type?: string;
       };
-      password_reset_token: string;
-      fine: number;
+      password_reset_Otp: string;
+      password_reset_Otp_expires: Date;
       refreshToken: string;
 }
 export type TLoginUser = {

@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { IUser, UserModel } from './user.interface';
+import config from '../../config/config';
 
 const userSchema: Schema = new Schema<IUser>(
       {
@@ -9,22 +11,23 @@ const userSchema: Schema = new Schema<IUser>(
             password: { type: String, select: 0, required: true },
             username: { type: String, required: true, unique: true },
             phone: { type: String },
-            credit: { type: Number, default: null },
             role: {
                   type: String,
                   default: 'user',
-                  enum: ['user', 'admin', 'driver'],
+                  enum: ['user', 'admin'],
             },
             avatar: {
                   public_id: { type: String, default: '' },
                   url: { type: String, default: '' },
+                  duration: { type: Number, default: null },
+                  file_type: { type: String, default: '' },
             },
             verificationInfo: {
                   verified: { type: Boolean, default: false },
-                  token: { type: String, default: '' },
+                  verificationOtp: { type: Number, default: null },
             },
-            password_reset_token: { type: String, default: '' },
-            fine: { type: Number, default: 0 },
+            password_reset_Otp: { type: String, default: '' },
+            password_reset_Otp_expires: { type: Date, default: null },
             refreshToken: { type: String, default: '' },
       },
       { timestamps: true }
@@ -33,26 +36,15 @@ const userSchema: Schema = new Schema<IUser>(
 // Pre save middleware / hook : will work on create() save()
 userSchema.pre('save', async function (next) {
       const user = this as any;
-
       // Hash password
       if (user.isModified('password')) {
-            const saltRounds = Number(process.env.bcrypt_salt_round) || 10;
+            const saltRounds = Number(config.bcrypt_salt_rounds) || 10;
             let pass = user.password;
             user.password = await bcrypt.hash(pass, saltRounds);
       }
 
       next();
 });
-
-// //post middleware /hook
-// userSchema.post('save', function (doc, next) {
-//     doc.password = '';
-//     if (doc.verificationInfo) {
-//         doc.verificationInfo.OTP = '';
-//     }
-//     doc.secureFolderPin = '';
-//     next();
-// });
 
 userSchema.statics.isUserExistsByEmail = async function (email: string) {
       return await User.findOne({ email }).select('+password +secureFolderPin');

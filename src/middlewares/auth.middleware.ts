@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import httpStatus from 'http-status';
 import AppError from '../errors/AppError';
-import { User } from '../models/user.model';
+import { User } from '../modules/user/user.model';
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
       const token = req.headers.authorization?.split(' ')[1];

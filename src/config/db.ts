@@ -1,11 +1,12 @@
+import chalk from 'chalk';
 import mongoose from 'mongoose';
 
 export const connectDB = async () => {
       try {
-            await mongoose.connect(process.env.MONGO_URI!);
-            console.log('MongoDB connected');
+            const dbinfo = await mongoose.connect(process.env.MONGO_URI!);
+            console.log(chalk.green(`Database connection successful: ${dbinfo.connection.host}`));
       } catch (error) {
-            console.error('MongoDB connection failed:', error);
+            console.error(chalk.red('MongoDB connection failed!!'), error);
             process.exit(1);
       }
 };
