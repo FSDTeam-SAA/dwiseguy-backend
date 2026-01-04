@@ -31,4 +31,6 @@ export interface UserModel extends Model<IUser> {
       isOTPVerified(id: string): Promise<boolean>;
       isPasswordMatched(plainTextPassword: string, hashPassword: string): Promise<boolean>;
       isJWTIssuedBeforePasswordChanged(passwordChangeTimeStamp: Date, JwtIssuedTimeStamp: number): boolean;
+      generateAccessToken(user: IUser): string;
+      generateRefreshToken(user: IUser): string;
 }

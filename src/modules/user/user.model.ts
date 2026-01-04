@@ -2,8 +2,6 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser, UserModel } from './user.interface';
 import config from '../../config/config';
-import { Secret, SignOptions } from 'jsonwebtoken';
-import jwt from 'jsonwebtoken';
 
 const userSchema: Schema = new Schema<IUser>(
       {
@@ -48,17 +46,16 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.statics.isUserExistsByEmail = async function (email: string) {
-      return await User.findOne({ email }).select('+password +secureFolderPin');
+      return await this.findOne({ email }).select('+password +secureFolderPin');
 };
 
 userSchema.statics.isOTPVerified = async function (id: string) {
-      const user = await User.findById(id).select('+verificationInfo');
-      return user?.verificationInfo.verified;
+      const user = await this.findById(id).select('+verificationInfo');
+      return user?.verificationInfo?.verified;
 };
 
 userSchema.statics.isPasswordMatched = async function (plainTextPassword: string, hashPassword: string) {
       return await bcrypt.compare(plainTextPassword, hashPassword);
 };
-
 
 export const User = mongoose.model<IUser, UserModel>('User', userSchema);
