@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
 import { IUser, UserModel } from './user.interface';
 import config from '../../config/config';
 
