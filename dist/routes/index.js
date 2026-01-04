@@ -8,7 +8,7 @@ const user_routes_1 = __importDefault(require("../modules/user/user.routes"));
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
-        path: '/users',
+        path: '/auth',
         route: user_routes_1.default,
     },
 ];

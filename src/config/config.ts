@@ -16,12 +16,6 @@ export default {
             uri: process.env.MONGO_URI,
       },
 
-      //JWT
-      jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: process.env.JWT_EXPIRE || '1h',
-      },
-
       // Access / Refresh Tokens
 
       tokens: {

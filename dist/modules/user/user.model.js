@@ -40,6 +40,7 @@ exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const config_1 = __importDefault(require("../../config/config"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -77,13 +78,25 @@ userSchema.pre('save', async function (next) {
     next();
 });
 userSchema.statics.isUserExistsByEmail = async function (email) {
-    return await exports.User.findOne({ email }).select('+password +secureFolderPin');
+    return await this.findOne({ email }).select('+password +secureFolderPin');
 };
 userSchema.statics.isOTPVerified = async function (id) {
-    const user = await exports.User.findById(id).select('+verificationInfo');
-    return user?.verificationInfo.verified;
+    const user = await this.findById(id).select('+verificationInfo');
+    return user?.verificationInfo?.verified;
 };
 userSchema.statics.isPasswordMatched = async function (plainTextPassword, hashPassword) {
     return await bcrypt_1.default.compare(plainTextPassword, hashPassword);
+};
+userSchema.statics.generateAccessToken = function (user) {
+    const payload = { _id: user._id.toString() };
+    const secret = config_1.default.tokens.access.secret;
+    const options = { expiresIn: config_1.default.tokens.access.expiresIn };
+    return jsonwebtoken_1.default.sign(payload, secret, options);
+};
+userSchema.statics.generateRefreshToken = function (user) {
+    const payload = { _id: user._id.toString() };
+    const secret = config_1.default.tokens.refresh.secret;
+    const options = { expiresIn: config_1.default.tokens.refresh.expiresIn };
+    return jsonwebtoken_1.default.sign(payload, secret, options);
 };
 exports.User = mongoose_1.default.model('User', userSchema);

@@ -11,6 +11,7 @@ const handleValidationError_1 = __importDefault(require("../errors/handleValidat
 const handleCastErrror_1 = __importDefault(require("../errors/handleCastErrror"));
 const handleDuplicateKeyError_1 = __importDefault(require("../errors/handleDuplicateKeyError"));
 const AppError_1 = __importDefault(require("../errors/AppError"));
+const config_1 = __importDefault(require("../config/config"));
 // import { TErrorSources } from '../app/interface/error';
 // import handleZodError from '../app/errors/handleZodError';
 // import handleValidationError from '../app/errors/handleValidationError';
@@ -84,7 +85,7 @@ next) => {
         message,
         errorSources,
         // error: err,
-        // stack: config.NODE_ENV === 'production' ? null : err.stack,
+        stack: config_1.default.env === 'development' ? err.stack : null,
     });
 };
 exports.globalErrorHandler = globalErrorHandler;
