@@ -2,6 +2,8 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser, UserModel } from './user.interface';
 import config from '../../config/config';
+import { Secret, SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 const userSchema: Schema = new Schema<IUser>(
       {
@@ -56,6 +58,22 @@ userSchema.statics.isOTPVerified = async function (id: string) {
 
 userSchema.statics.isPasswordMatched = async function (plainTextPassword: string, hashPassword: string) {
       return await bcrypt.compare(plainTextPassword, hashPassword);
+};
+
+userSchema.statics.generateAccessToken = function (user: IUser) {
+      const payload = { _id: user._id.toString() };
+      const secret: Secret = config.tokens.access.secret as string;
+      const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as any };
+
+      return jwt.sign(payload, secret, options);
+};
+
+userSchema.statics.generateRefreshToken = function (user: IUser) {
+      const payload = { _id: user._id.toString() };
+      const secret: Secret = config.tokens.refresh.secret as string;
+      const options: SignOptions = { expiresIn: config.tokens.refresh.expiresIn as any };
+
+      return jwt.sign(payload, secret, options);
 };
 
 export const User = mongoose.model<IUser, UserModel>('User', userSchema);
