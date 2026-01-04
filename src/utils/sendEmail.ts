@@ -35,3 +35,4 @@ export const mailer = async ({ subject, template, email }: MailerOptions): Promi
             throw new AppError(500, 'Failed to send email', error);
       }
 };
+
