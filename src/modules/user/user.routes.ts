@@ -2,7 +2,7 @@ import express from 'express';
 import { createUser, getUsers, loginUser } from './user.controller';
 import { upload } from '../../middlewares/multer.middleware';
 import { createUserSchema, loginUserSchema } from './user.validation';
-import { validateRequest } from '../../middlewares/validateRequest.middleware';
+import { validateRequest } from '../../middlewares/validateRequest/validateRequest.middleware';
 
 const router = express.Router();
 

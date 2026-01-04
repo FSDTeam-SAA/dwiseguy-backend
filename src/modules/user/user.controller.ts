@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { User } from './user.model';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import AppError from '../../errors/AppError';
+import { TLoginUser } from './user.interface';
+import { User } from './user.model';
 
 // @desc    Create user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -17,7 +18,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 
 // @desc    login user
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
-      const value = req.body;
+      const value: TLoginUser = req.body;
 
       const user = await User.findOne({ email: value.email }).select('+password');
       if (!user) throw new AppError(400, 'User not found email or password is incorrect');
