@@ -2,6 +2,8 @@ import { Router } from 'express';
 import userRoutes from '../modules/user/user.routes';
 import courseRoutes from '../modules/course/course.routes';
 import lessonRouter from '../modules/lesson/lesson.route';
+import { subLessonRouter } from '../modules/sublesson/sublesson.route';
+import { progressRouter } from '../modules/progress/progress.route';
 const router = Router();
 
 const moduleRoutes = [
@@ -16,7 +18,15 @@ const moduleRoutes = [
       {
             path: '/admin/lesson',
             route: lessonRouter,
-      }
+      },
+      {
+    path: '/admin/sublesson',
+    route: subLessonRouter,
+  },
+  {
+    path: '/user/progress',
+    route: progressRouter,
+  },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

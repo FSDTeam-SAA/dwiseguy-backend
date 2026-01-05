@@ -1,31 +1,30 @@
-import { ILesson } from './lesson.interface';
-import { Schema, model } from 'mongoose';
+import { ILesson } from "./lesson.interface";
+import { Schema, model } from "mongoose";
 
 const lessonSchema = new Schema<ILesson>(
   {
-    courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
-    title: { type: String, required: true },
-    slug: { type: String, required: true, unique: true },
-    content: { type: String, required: true },
-    media: {
-      images: [{ 
-        url: { type: String }, 
-        public_id: { type: String } 
-      }],
-      // Using a Sub-document approach for cleaner Admin updates
-      audio: {
-        url: { type: String, default: null },
-        public_id: { type: String, default: null }
-      }
+    courseId: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'Course', 
+      required: true 
     },
+   
+    title: { type: String, required: true, trim: true },
+    description: { type: String },
     order: { type: Number, required: true },
-    isExercise: { type: Boolean, default: false },
-    duration: { type: Number, default: 0 }
+    sublessons: [
+      { 
+        type: Schema.Types.ObjectId, 
+        ref: 'Sublesson' 
+      }
+    ]
   },
   { timestamps: true }
 );
 
-// Scalability Index: Optimizes fetching the curriculum in order
-lessonSchema.index({ courseId: 1, order: 1 }, { unique: true });
+// Scalability: Compound index for quick section-based ordering
+lessonSchema.index({ sectionId: 1, order: 1 }, { unique: true });
+// Index for course-based retrieval
+lessonSchema.index({ courseId: 1 });
 
-export const Lesson = model<ILesson>('Lesson', lessonSchema);
+export const Lesson = model<ILesson>("Lesson", lessonSchema);
