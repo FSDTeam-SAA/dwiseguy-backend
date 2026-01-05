@@ -27,6 +27,10 @@ export default {
                   secret: process.env.REFRESH_TOKEN_SECRET,
                   expiresIn: process.env.REFRESH_TOKEN_EXPIRES || '90d',
             },
+            password:{
+                  secret: process.env.PASSWORD_TOKEN_SECRET,
+                  expiresIn: process.env.PASSWORD_TOKEN_EXPIRES || '10m',
+            }
       },
 
       // Bcrypt
