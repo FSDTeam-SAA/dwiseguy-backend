@@ -25,6 +25,15 @@ const moduleRoutes = [
             path: '/quiz/student',
             route: quizAttemptRoutes,
       },
+      { path: '/admin/lesson', route: lessonRouter },
+      {
+            path: '/admin/sublesson',
+            route: subLessonRouter,
+      },
+      {
+            path: '/user/progress',
+            route: progressRouter,
+      },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
