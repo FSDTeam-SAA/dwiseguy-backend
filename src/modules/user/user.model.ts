@@ -8,9 +8,10 @@ import jwt from 'jsonwebtoken';
 const userSchema: Schema = new Schema<IUser>(
       {
             name: { type: String, required: true },
-            email: { type: String, required: true,lowercase: true, unique: true },
+            email: { type: String, required: true, lowercase: true, unique: true },
             password: { type: String, select: 0, required: true },
             username: { type: String, required: true, unique: true },
+            age: { type: Number, default: null },
             phone: { type: String },
             role: {
                   type: String,
@@ -27,8 +28,9 @@ const userSchema: Schema = new Schema<IUser>(
                   verified: { type: Boolean, default: false },
                   verificationOtp: { type: Number, default: null },
             },
-            password_reset_Otp: { type: String, default: '' },
-            password_reset_Otp_expires: { type: Date, default: null },
+            password_reset_Otp: { type: Number, default: null },
+            password_reset_token: { type: String, default: '' },
+            password_reset_otp_expires: { type: Date, default: null },
             refreshToken: { type: String, default: '' },
       },
       { timestamps: true }
@@ -51,6 +53,8 @@ userSchema.statics.isUserExistsByEmail = async function (email: string) {
       return await this.findOne({ email }).select('+password +secureFolderPin');
 };
 
+
+
 userSchema.statics.isOTPVerified = async function (id: string) {
       const user = await this.findById(id).select('+verificationInfo');
       return user?.verificationInfo?.verified;
@@ -60,8 +64,10 @@ userSchema.statics.isPasswordMatched = async function (plainTextPassword: string
       return await bcrypt.compare(plainTextPassword, hashPassword);
 };
 
+
+
 userSchema.statics.generateAccessToken = function (user: IUser) {
-      const payload = { _id: user._id.toString() };
+      const payload = { _id: user._id.toString(), email: user.email };
       const secret: Secret = config.tokens.access.secret as string;
       const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as any };
 
