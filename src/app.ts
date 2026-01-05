@@ -7,6 +7,7 @@ import session from 'express-session';
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const corsOptions = {
       origin: '*',
@@ -14,20 +15,19 @@ const corsOptions = {
       credentials: true,
 };
 
-
-
-
 // Add this before your routes
-app.use(session({
-  secret: 'piano_academy_secret_key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: false, // set to true if using https
-    httpOnly: true,
-    maxAge: 600000 // 10 minutes
-  }
-}));
+app.use(
+      session({
+            secret: 'piano_academy_secret_key',
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                  secure: false, // set to true if using https
+                  httpOnly: true,
+                  maxAge: 600000, // 10 minutes
+            },
+      })
+);
 
 app.use(cors(corsOptions));
 
