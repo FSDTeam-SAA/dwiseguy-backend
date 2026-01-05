@@ -7,6 +7,7 @@ import { mailer } from '../../utils/sendEmail';
 import { forgetPasswordOtpTemplate } from '../../utils/email.templates';
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
+import { TLoginUser } from './user.interface';
 
 
 // @desc    Create user

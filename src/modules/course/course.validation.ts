@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// Lesson Reference Schema
-
 // For referencing lessons by ObjectId
 const lessonRefSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid lesson ID');
 

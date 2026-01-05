@@ -6,7 +6,10 @@ const courseSchema = new Schema<ICourse>(
       {
             courseTitle: { type: String, required: true },
             courseDescription: { type: String, required: true },
-            courseImage: { type: String },
+            courseImage: {
+                  public_id: String,
+                  url: String,
+            },
             level: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
             lessons: [
                   {
