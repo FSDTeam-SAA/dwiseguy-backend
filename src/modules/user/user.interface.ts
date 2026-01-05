@@ -6,6 +6,7 @@ export interface IUser extends Document {
       email: string;
       password?: string;
       username: string;
+      age: number | null;
       role: 'admin' | 'user';
       verificationInfo: {
             verified: boolean;
@@ -18,8 +19,9 @@ export interface IUser extends Document {
             duration?: number;
             file_type?: string;
       };
-      password_reset_Otp: string;
-      password_reset_Otp_expires: Date;
+      password_reset_Otp: number | null;
+      password_reset_otp_expires: Date | null;
+      password_reset_token: string;
       refreshToken: string;
 }
 export type TLoginUser = {

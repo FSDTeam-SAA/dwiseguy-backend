@@ -38,21 +38,32 @@ export const createUserSchema = z.object({
       }),
 });
 
-
-
 export const updateUserSchema = z.object({
       body: z.object({
             name: z.string().min(2).optional(),
-            username: z
-                  .string()
-                  .min(3)
-                  .regex(/^[a-z0-9_]+$/)
-                  .optional(),
-            phone: z.string().optional(),
-            avatar: avatarSchema.optional(),
+            age: z.number().optional(),
       }),
 });
 
+//update password
+export const updatePasswordSchema = z.object({
+      body: z.object({
+            oldPassword: z
+                  .string()
+                  .min(6, 'Password must be at least 6 characters')
+                  .regex(
+                        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/,
+                        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+                  ),
+            newPassword: z
+                  .string()
+                  .min(6, 'Password must be at least 6 characters')
+                  .regex(
+                        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/,
+                        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+                  ),
+      }),
+})
 
 // /login user validation schema
 export const loginUserSchema = z.object({
@@ -66,6 +77,4 @@ export const loginUserSchema = z.object({
                         'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
                   ),
       }),
-})
-
-
+});

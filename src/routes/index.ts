@@ -3,6 +3,9 @@ import userRoutes from '../modules/user/user.routes';
 import courseRoutes from '../modules/course/course.routes';
 import quizRoutes from '../modules/quiz/quiz.route';
 import quizAttemptRoutes from '../modules/quiz/quizAttempt.route';
+import lessonRouter from '../modules/lesson/lesson.route';
+import { subLessonRouter } from '../modules/sublesson/sublesson.route';
+import { progressRouter } from '../modules/progress/progress.route';
 const router = Router();
 
 const moduleRoutes = [
