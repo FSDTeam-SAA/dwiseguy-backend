@@ -54,7 +54,7 @@ const generatePasswordResetToken = async (user: any) => {
 };
 
 const decodeResetToken = (token: string) => {
-      console.log(token);
+      if (!token) throw new AppError(StatusCodes.UNAUTHORIZED, 'Reset token not found');
 
       const decoded = jwt.verify(token, config.tokens.password.secret as string) as jwt.JwtPayload;
 
