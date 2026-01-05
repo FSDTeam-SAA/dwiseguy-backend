@@ -1,0 +1,110 @@
+import mongoose, { Schema, Model } from 'mongoose';
+import { IQuiz, IQuestion, IOption } from './quiz.interface';
+
+// Option Sub-Schema
+const optionSchema = new Schema<IOption>(
+      {
+            optionText: {
+                  type: String,
+                  required: true,
+            },
+      },
+      { _id: false }
+);
+
+// Question Sub-Schema
+const questionSchema = new Schema<IQuestion>(
+      {
+            questionText: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                  unique: true,
+            },
+            options: {
+                  type: [optionSchema],
+                  required: true,
+                  validate: {
+                        validator: function (options: IOption[]) {
+                              return options.length === 4;
+                        },
+                        message: 'Each question must have exactly 4 options',
+                  },
+            },
+            // explanation: { type: String }, // TODO: Add later if needed
+      },
+      { _id: false }
+);
+
+// Main Quiz Schema
+const quizSchema = new Schema<IQuiz>(
+      {
+            quizName: {
+                  type: String,
+                  required: true,
+                  trim: true,
+            },
+            // lessonId: {
+            //       type: Schema.Types.ObjectId,
+            //       ref: 'Lesson',
+            //       required: true,
+            // }, // TODO: Uncomment when Lesson model is ready
+            // classId: {
+            //       type: Schema.Types.ObjectId,
+            //       ref: 'Class',
+            //       required: true,
+            // }, // TODO: Uncomment when Class model is ready
+            questions: {
+                  type: [questionSchema],
+                  required: true,
+                  validate: {
+                        validator: function (questions: IQuestion[]) {
+                              return questions.length === 20;
+                        },
+                        message: 'Quiz must have exactly 20 questions',
+                  },
+            },
+            timeLimit: {
+                  type: Number,
+                  required: true,
+                  default: 20, // 20 minutes
+            },
+            totalMarks: {
+                  type: Number,
+                  required: true,
+                  default: 20, // 1 mark per question
+            },
+            createdBy: {
+                  type: Schema.Types.ObjectId,
+                  ref: 'User',
+                  required: true,
+            },
+      },
+      { timestamps: true }
+);
+
+// Index for unique quiz name per class (TODO: Uncomment when classId is added)
+// quizSchema.index({ quizName: 1, classId: 1 }, { unique: true });
+
+// Validate that exactly one option is correct per question
+quizSchema.pre('save', function (next) {
+      for (const question of this.questions) {
+            const options = question.options.map((o) => o.optionText.toLowerCase().trim());
+
+            const correct = question.correctAnswer.toLowerCase().trim();
+
+            if (!options.includes(correct)) {
+                  return next(
+                        new Error(`Correct answer must match one of the options. Question: "${question.questionText}"`)
+                  );
+            }
+
+            if (new Set(options).size !== options.length) {
+                  return next(new Error(`Duplicate options found in question: "${question.questionText}"`));
+            }
+      }
+
+      next();
+});
+
+export const Quiz: Model<IQuiz> = mongoose.model<IQuiz>('Quiz', quizSchema);
