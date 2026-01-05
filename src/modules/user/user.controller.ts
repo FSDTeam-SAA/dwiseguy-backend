@@ -7,6 +7,7 @@ import { mailer } from '../../utils/sendEmail';
 import { forgetPasswordOtpTemplate } from '../../utils/email.templates';
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
+import { TLoginUser } from './user.interface';
 import { title } from 'node:process';
 
 
@@ -22,7 +23,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 
 // @desc    login user
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
-      const value = req.body;
+      const value: TLoginUser = req.body;
 
       const user = await User.findOne({ email: value.email }).select('+password');
       if (!user) throw new AppError(400, 'User not found email or password is incorrect');
