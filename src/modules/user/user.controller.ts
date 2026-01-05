@@ -8,6 +8,7 @@ import { forgetPasswordOtpTemplate } from '../../utils/email.templates';
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
 import { TLoginUser } from './user.interface';
+import { title } from 'node:process';
 
 
 // @desc    Create user
@@ -75,7 +76,17 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
   // CRITICAL: Save to DB
   await userService.saveOtpToDb(email, otp, expires);
 
+//   const emailTemplate = forgetPasswordOtpTemplate(
+//     user.name, 
+//     otp, 
+//     'Reset Your Piano Academy Password'
+//   );
   // Send Email Logic... (mailer function)
+  await mailer({
+  subject: 'Password Reset OTP',
+  template: forgetPasswordOtpTemplate(user.name, otp, title), // Provide the required arguments
+  email: email,
+});
   
   sendResponse(res, {
     statusCode: StatusCodes.OK,
