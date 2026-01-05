@@ -1,6 +1,6 @@
 import express from 'express';
 import { progressController } from './progress.controller';
-import { auth } from '../../middlewares/auth.middleware';
+// import { auth } from '../../middlewares/auth.middleware';
 
 const router = express.Router();
 
