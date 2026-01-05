@@ -9,14 +9,22 @@ import AppError from '../../errors/AppError';
 
 
 export const createLesson = catchAsync(async (req: Request, res: Response) => {
-  // Multer puts files in req.files when using .fields()
+  // 1. Check for files from Multer
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
   
-  // Lesson details (title, content, courseId, order, isExercise) are sent in a 'data' field as stringified JSON
-  if (!req.body.data) throw new AppError(StatusCodes.BAD_REQUEST, "Lesson data is required");
-  const lessonData = JSON.parse(req.body.data);
+  // 2. Parse the stringified 'data' field
+  if (!req.body.data) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Lesson data is required in the 'data' field");
+  }
 
-  // 1. Process Images
+  let lessonData;
+  try {
+    lessonData = JSON.parse(req.body.data);
+  } catch (error) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid JSON format in data field");
+  }
+
+  // 3. Process Images for Lesson (e.g., Intro diagrams)
   const imageUploadPromises = (files?.images || []).map(file => 
     uploadToCloudinary(file.path, 'image')
   );
@@ -25,7 +33,7 @@ export const createLesson = catchAsync(async (req: Request, res: Response) => {
     .filter(res => res !== null)
     .map(res => ({ url: res!.url, public_id: res!.public_id }));
 
-  // 2. Process Audio
+  // 4. Process Audio for Lesson (e.g., Intro instructions)
   let audio = null;
   if (files?.audio?.[0]) {
     const audioRes = await uploadToCloudinary(files.audio[0].path, 'audio');
@@ -34,7 +42,8 @@ export const createLesson = catchAsync(async (req: Request, res: Response) => {
     }
   }
 
-  // 3. Construct the Payload for DB
+  // 5. Construct final payload
+  // Ensure courseId and sectionId are present in lessonData
   const finalPayload = {
     ...lessonData,
     media: {
@@ -43,12 +52,13 @@ export const createLesson = catchAsync(async (req: Request, res: Response) => {
     }
   };
 
+  // 6. Call Service (which handles Course ID pushing via Transaction)
   const result = await lessonService.createLessonIntoDb(finalPayload);
 
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
     success: true,
-    message: 'Lesson with multimedia created successfully',
+    message: 'Lesson with multimedia created and linked to course successfully',
     data: result,
   });
 });
