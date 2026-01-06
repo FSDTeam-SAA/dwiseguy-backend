@@ -2,23 +2,51 @@ import { StatusCodes } from 'http-status-codes';
 import AppError from '../../errors/AppError';
 import { Course } from '../course/course.model';
 import { Lesson } from '../lesson/lesson.model';
-import { Sublesson } from '../sublesson/sublesson.model';
 import { UserProgress } from './progress.model';
 import { Types } from 'mongoose';
+import { SubLesson } from '../sublesson/sublesson.model';
 
 const initializeProgress = async (userId: string, courseId: string) => {
-    const existingProgress = await UserProgress.findOne({ userId, courseId });
+
+const courseObjId = new Types.ObjectId(courseId);
+
+    // 1. Verify this is actually a Course ID
+    const courseExists = await Course.findById(courseObjId);
+    if (!courseExists) {
+        throw new AppError(StatusCodes.NOT_FOUND, "The provided ID does not belong to a valid Course.");
+    }
+
+    // 2. Now search for lessons
+    const firstLesson = await Lesson.findOne({ courseId: courseObjId }).sort({ order: 1 });
+    
+    if (!firstLesson) {
+        throw new AppError(StatusCodes.BAD_REQUEST, "This course exists but has no lessons added yet.");
+    }
+
+    // Explicitly cast to ObjectId
+    const userObjId = new Types.ObjectId(userId);
+    // const courseObjId = new Types.ObjectId(courseId);
+
+    const existingProgress = await UserProgress.findOne({ 
+        userId: userObjId, 
+        courseId: courseObjId 
+    });
+    
     if (existingProgress) return existingProgress;
 
-    // Dynamically find the start of the course (Lowest Order)
-    const firstLesson = await Lesson.findOne({ courseId }).sort({ order: 1 });
-    if (!firstLesson) throw new AppError(StatusCodes.BAD_REQUEST, "No lessons in this course.");
+    // FIND LESSON: Ensure we use the ObjectId here
+    // const firstLesson = await Lesson.findOne({ courseId: courseObjId }).sort({ order: 1 });
+    
+    // This is where your error is triggering
+    if (!firstLesson) {
+        throw new AppError(StatusCodes.BAD_REQUEST, `No lessons found for Course ID: ${courseId}`);
+    }
 
-    const firstSub = await Sublesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 });
+    const firstSub = await SubLesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 });
 
     return await UserProgress.create({
-        userId: new Types.ObjectId(userId),
-        courseId: new Types.ObjectId(courseId),
+        userId: userObjId,
+        courseId: courseObjId,
         currentLessonId: firstLesson._id,
         currentSubLessonId: firstSub ? firstSub._id : null,
     });
@@ -94,7 +122,7 @@ const getCourseDetailsWithProgress = async (userId: string, courseId: string) =>
 
 const updateStudentProgress = async (userId: string, subLessonId: string) => {
     // 1. Find the Sublesson
-    const currentSub = await Sublesson.findById(subLessonId);
+    const currentSub = await SubLesson.findById(subLessonId);
     if (!currentSub) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
 
     // 2. Find the Parent Lesson to get the Course ID (Climbing the ladder)
@@ -114,7 +142,7 @@ const updateStudentProgress = async (userId: string, subLessonId: string) => {
     );
 
     // 5. Logic: Find if there is a Next Sublesson in this lesson
-    const nextSub = await Sublesson.findOne({
+    const nextSub = await SubLesson.findOne({
         lessonId: currentLesson._id,
         order: { $gt: currentSub.order }
     }).sort({ order: 1 });
@@ -137,7 +165,7 @@ const updateStudentProgress = async (userId: string, subLessonId: string) => {
     }).sort({ order: 1 });
 
     if (nextLesson) {
-        const firstSubOfNext = await Sublesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
+        const firstSubOfNext = await SubLesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
 
         progress.currentLessonId = nextLesson._id as Types.ObjectId;
         progress.currentSubLessonId = firstSubOfNext ? (firstSubOfNext._id as Types.ObjectId) : null;
@@ -167,7 +195,7 @@ const getResumePoint = async (userId: string, courseId: string) => {
     const firstLesson = await Lesson.findOne({ courseId }).sort({ order: 1 });
     // Find the first sublesson of that lesson
     const firstSub = firstLesson 
-      ? await Sublesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 }) 
+      ? await SubLesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 }) 
       : null;
 
     return {
