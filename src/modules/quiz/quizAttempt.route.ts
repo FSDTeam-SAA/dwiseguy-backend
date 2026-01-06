@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../../middlewares/auth.middleware';
+import { authGuard } from '../../middlewares/auth.middleware';
 import { validateRequest } from '../../middlewares/validateRequest.middleware';
 import {
       getQuizForStudent,
@@ -17,18 +17,18 @@ const router = express.Router();
 ================================ */
 
 // Get all student's quiz attempts (Student Dashboard)
-router.get('/my-attempts', protect, getStudentAllAttempts);
+router.get('/my-attempts', authGuard, getStudentAllAttempts);
 
 // Submit Quiz (Student)
-router.post('/submit', protect, validateRequest(submitQuizSchema), submitQuiz);
+router.post('/submit', authGuard, validateRequest(submitQuizSchema), submitQuiz);
 
 // Check if student has attempted quiz
-router.get('/check-attempt/:id', protect, validateRequest(getQuizByIdSchema), checkStudentAttempt);
+router.get('/check-attempt/:id', authGuard, validateRequest(getQuizByIdSchema), checkStudentAttempt);
 
 // Get Quiz for Student (without correct answers)
-router.get('/:id', protect, validateRequest(getQuizByIdSchema), getQuizForStudent);
+router.get('/:id', authGuard, validateRequest(getQuizByIdSchema), getQuizForStudent);
 
 // Get Student's Specific Quiz Result
-router.get('/result/:id', protect, validateRequest(getQuizByIdSchema), getStudentQuizResult);
+router.get('/result/:id', authGuard, validateRequest(getQuizByIdSchema), getStudentQuizResult);
 
 export default router;
