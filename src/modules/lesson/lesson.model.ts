@@ -12,6 +12,10 @@ const lessonSchema = new Schema<ILesson>(
     title: { type: String, required: true, trim: true },
     description: { type: String },
     order: { type: Number, required: true },
+  images: [{ 
+    url: { type: String, required: true }, 
+    public_id: { type: String, required: true } 
+  }],
     sublessons: [
       { 
         type: Schema.Types.ObjectId, 
