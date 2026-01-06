@@ -13,9 +13,9 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 
 // @desc    Create user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
-      const value = req.body;
+      const { name, email, password, username } = req.body;
 
-      const user = (await User.create(value)).save();
+      const user = (await User.create({ name, email, password, username })).save();
       if (!user as any) throw new AppError(400, 'User registration failed');
 
       sendResponse(res, { statusCode: 201, success: true, message: 'User created successfully', data: user });

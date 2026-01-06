@@ -8,61 +8,44 @@ import { uploadToCloudinary } from '../../utils/cloudinary';
 import AppError from '../../errors/AppError';
 
 
-export const createLesson = catchAsync(async (req: Request, res: Response) => {
-  // 1. Check for files from Multer
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+const createLesson = catchAsync(async (req: Request, res: Response) => {
+  const files = req.files as any;
   
-  // 2. Parse the stringified 'data' field
   if (!req.body.data) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "Lesson data is required in the 'data' field");
+    throw new AppError(StatusCodes.BAD_REQUEST, "Lesson data is required");
   }
 
-  let lessonData;
-  try {
-    lessonData = JSON.parse(req.body.data);
-  } catch (error) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid JSON format in data field");
+  const lessonData = JSON.parse(req.body.data);
+
+  // FIX: Explicitly define the type to satisfy TypeScript
+  let images: { url: string; public_id: string }[] = [];
+
+  if (files?.images) {
+    const imageUploadPromises = files.images.map((file: any) => 
+      uploadToCloudinary(file.path, 'image')
+    );
+    const imageResults = await Promise.all(imageUploadPromises);
+    
+    images = imageResults
+      .filter((res): res is { url: string; public_id: string } => res !== null)
+      .map(res => ({ url: res.url, public_id: res.public_id }));
   }
 
-  // 3. Process Images for Lesson (e.g., Intro diagrams)
-  const imageUploadPromises = (files?.images || []).map(file => 
-    uploadToCloudinary(file.path, 'image')
-  );
-  const imageResults = await Promise.all(imageUploadPromises);
-  const images = imageResults
-    .filter(res => res !== null)
-    .map(res => ({ url: res!.url, public_id: res!.public_id }));
-
-  // 4. Process Audio for Lesson (e.g., Intro instructions)
-  let audio = null;
-  if (files?.audio?.[0]) {
-    const audioRes = await uploadToCloudinary(files.audio[0].path, 'audio');
-    if (audioRes) {
-      audio = { url: audioRes.url, public_id: audioRes.public_id };
-    }
-  }
-
-  // 5. Construct final payload
-  // Ensure courseId and sectionId are present in lessonData
+  // Matching your Lesson Schema exactly (top-level images array)
   const finalPayload = {
     ...lessonData,
-    media: {
-      images,
-      audio
-    }
+    images: images, 
   };
 
-  // 6. Call Service (which handles Course ID pushing via Transaction)
   const result = await lessonService.createLessonIntoDb(finalPayload);
 
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
     success: true,
-    message: 'Lesson with multimedia created and linked to course successfully',
+    message: 'Lesson created and linked to course successfully',
     data: result,
   });
 });
-
 
 const updateLesson = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -78,7 +61,7 @@ const updateLesson = catchAsync(async (req: Request, res: Response) => {
 
 const deleteLesson = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  await lessonService.deleteLessonFromDB(id);
+  await lessonService.deleteLessonFromDb(id);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,

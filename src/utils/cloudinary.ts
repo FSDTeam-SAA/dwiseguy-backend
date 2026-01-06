@@ -26,7 +26,6 @@ export const uploadToCloudinary = async (
                   folder,
                   quality: 'auto',
             });
-            console.log(localFilePath);
 
             // Remove file from local storage after upload
             if (localFilePath && fs.existsSync(localFilePath)) {

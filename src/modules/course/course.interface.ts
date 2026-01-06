@@ -7,6 +7,7 @@ export interface ICourse extends Document {
       courseImage?: string;
       lessons: Types.ObjectId[]; // matches schema
       level?: 'beginner' | 'intermediate' | 'advanced';
+      isActive: boolean;
       createdAt: Date;
       updatedAt: Date;
 }

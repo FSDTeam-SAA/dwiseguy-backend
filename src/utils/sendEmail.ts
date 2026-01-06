@@ -15,7 +15,6 @@ const transporter: Transporter = nodemailer.createTransport({
       },
 });
 
-console.log(config.email.host, config.email.password);
 
 interface MailerOptions {
       subject: string;

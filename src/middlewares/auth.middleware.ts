@@ -12,6 +12,7 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
 
       try {
             const decoded = (await jwt.verify(token, config.tokens.access.secret!)) as JwtPayload;
+            
             const user = await User.findById(decoded._id);
             if (user) {
                   req.user = {
