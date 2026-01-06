@@ -6,6 +6,9 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 import AppError from '../../errors/AppError';
 import { Course } from './course.model';
 import { buildMetaPagination } from '../../utils/pagination';
+import { Sublesson } from '../sublesson/sublesson.model';
+import { Lesson } from '../lesson/lesson.model';
+import { ICourse, PopulatedCourse } from './course.interface';
 
 // @desc    Create user
 export const createCourse = catchAsync(async (req: Request, res: Response) => {
@@ -93,8 +96,58 @@ export const updateCourse = catchAsync(async (req: Request, res: Response) => {
 
 //delete course
 export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
-      const id = req.params.id as string;
-      const course = await Course.findById(id).populate('lessons');
+      const courseId = req.params.id as string;
+
+      // Populate lessons and sublessons
+      const course = (await Course.findById(courseId).populate({
+            path: 'lessons',
+            populate: { path: 'sublessons' },
+      })) as PopulatedCourse | null;
+
       if (!course) throw new AppError(404, 'Course not found');
-      sendResponse(res, { statusCode: 200, success: true, message: 'Course deleted successfully', data: course });
+
+      // Delete course image
+      if (course.courseImage?.public_id) {
+            await deleteFromCloudinary(course.courseImage.public_id, 'image');
+      }
+
+      // Loop through lessons
+      for (const lesson of course.lessons ?? []) {
+            // Delete lesson images
+            for (const img of lesson.images ?? []) {
+                  if (img.public_id) await deleteFromCloudinary(img.public_id, 'image');
+            }
+
+            // Delete sublesson media
+            for (const sub of lesson.sublessons ?? []) {
+                  // Images
+                  for (const img of sub.media?.images ?? []) {
+                        if (img.public_id) await deleteFromCloudinary(img.public_id, 'image');
+                  }
+
+                  // Audio
+                  if (sub.media?.audio?.public_id) {
+                        await deleteFromCloudinary(sub.media.audio.public_id, 'audio');
+                  }
+            }
+
+            // Delete sublessons from DB
+            const sublessonIds = lesson.sublessons?.map((s) => s._id) ?? [];
+            if (sublessonIds.length) {
+                  await Sublesson.deleteMany({ _id: { $in: sublessonIds } });
+            }
+      }
+
+      // Delete all lessons of the course
+      await Lesson.deleteMany({ courseId: course._id });
+
+      // Delete the course itself
+      await course.deleteOne();
+
+      sendResponse(res, {
+            statusCode: 200,
+            success: true,
+            message: 'Course, lessons, sublessons, and all media deleted successfully',
+            data: course,
+      });
 });
