@@ -32,8 +32,6 @@ export const createUserSchema = z.object({
 
             phone: z.string().optional(),
 
-            role: z.enum(['user', 'admin']).optional(),
-
             avatar: avatarSchema.optional(),
       }),
 });
