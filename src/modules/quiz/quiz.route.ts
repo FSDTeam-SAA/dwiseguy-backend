@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, isAdmin } from '../../middlewares/auth.middleware';
+import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 import { validateRequest } from '../../middlewares/validateRequest.middleware';
 import {
       createQuiz,
@@ -19,24 +19,24 @@ const router = express.Router();
 ================================ */
 
 // Get Leaderboard (Admin)
-router.get('/leaderboard', protect, isAdmin, getLeaderboard);
+router.get('/leaderboard', authGuard, isAdmin, getLeaderboard);
 
 // Create Quiz (Admin)
-router.post('/', protect, isAdmin, validateRequest(createQuizSchema), createQuiz);
+router.post('/', authGuard, isAdmin, validateRequest(createQuizSchema), createQuiz);
 
 // Get All Quizzes (Admin)
-router.get('/', protect, isAdmin, getAllQuizzes);
+router.get('/', authGuard, isAdmin, getAllQuizzes);
 
 // Get Quiz by ID (Admin) - with correct answers
-router.get('/:id', protect, isAdmin, validateRequest(getQuizByIdSchema), getQuizById);
+router.get('/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizById);
 
 // Update Quiz (Admin)
-router.put('/:id', protect, isAdmin, validateRequest(updateQuizSchema), updateQuiz);
+router.put('/:id', authGuard, isAdmin, validateRequest(updateQuizSchema), updateQuiz);
 
 // Delete Quiz (Admin)
-router.delete('/:id', protect, isAdmin, validateRequest(getQuizByIdSchema), deleteQuiz);
+router.delete('/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), deleteQuiz);
 
 // Get Quiz Analytics (Admin)
-router.get('/:id/analytics', protect, isAdmin, validateRequest(getQuizByIdSchema), getQuizAnalytics);
+router.get('/:id/analytics', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizAnalytics);
 
 export default router;

@@ -22,20 +22,16 @@ const router = express.Router();
 
 router.post('/registration', validateRequest(createUserSchema), createUser);
 router.post('/login', validateRequest(loginUserSchema), loginUser);
-router.post('/get-my-profile', authGuard, getMyProfile);
-router.post('/get-single-user/:id', authGuard, isAdmin, getSingleUser);
-router.post('/get-all-users', authGuard, isAdmin, getAllUsers);
+router.get('/get-my-profile', authGuard, getMyProfile);
+router.get('/get-single-user/:id', authGuard, isAdmin, getSingleUser);
+router.get('/get-all-users', authGuard, isAdmin, getAllUsers);
 router.patch('/update-user', authGuard, upload.single('image'), updateUser);
 router.patch('/update-password', authGuard, validateRequest(updatePasswordSchema), updatePassword);
-
 router.post('/log-out', logoutUser);
 router.post('/regenerate-access-token', createAccessToken);
-
-// forgot password
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', upload.none(), resetPassword);
 
-// test
 
 export default router;
