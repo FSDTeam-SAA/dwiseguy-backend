@@ -14,4 +14,6 @@ router.post(
   subLessonController.createSubLesson
 );
 
+// router.get('/:id',  subLessonController.getSingleSubLesson);
+
 export const subLessonRouter = router;

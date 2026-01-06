@@ -18,6 +18,13 @@ router.get(
   progressController.getStudentCourseDetails
 );
 
+router.get(
+  '/resume/:courseId',
+  progressController.resumeCourse
+);
+
+router.get('/leaderboard', progressController.getLeaderboard);
+
 router.post('/complete-step', progressController.completeSubLesson);
 
 export const progressRouter = router;

@@ -8,6 +8,11 @@ const optionSchema = new Schema<IOption>(
                   type: String,
                   required: true,
             },
+            isCorrect: {
+                  type: Boolean,
+                  required: true,
+                  default: false,
+            },
       },
       { _id: false }
 );
@@ -44,16 +49,16 @@ const quizSchema = new Schema<IQuiz>(
                   required: true,
                   trim: true,
             },
-            // lessonId: {
-            //       type: Schema.Types.ObjectId,
-            //       ref: 'Lesson',
-            //       required: true,
-            // }, // TODO: Uncomment when Lesson model is ready
-            // classId: {
-            //       type: Schema.Types.ObjectId,
-            //       ref: 'Class',
-            //       required: true,
-            // }, // TODO: Uncomment when Class model is ready
+            lessonId: {
+                  type: Schema.Types.ObjectId,
+                  ref: 'Lesson',
+                  required: true,
+            }, // TODO: Uncomment when Lesson model is ready
+            classId: {
+                  type: Schema.Types.ObjectId,
+                  ref: 'Sublesson',
+                  required: true,
+            }, // TODO: Uncomment when Class model is ready
             questions: {
                   type: [questionSchema],
                   required: true,
@@ -89,19 +94,28 @@ const quizSchema = new Schema<IQuiz>(
 // Validate that exactly one option is correct per question
 quizSchema.pre('save', function (next) {
       for (const question of this.questions) {
-            const options = question.options.map((o) => o.optionText.toLowerCase().trim());
-
-            const correct = question.correctAnswer.toLowerCase().trim();
-
-            if (!options.includes(correct)) {
+            const correctCount = question.options.filter((opt) => opt.isCorrect).length;
+            if (correctCount !== 1) {
                   return next(
-                        new Error(`Correct answer must match one of the options. Question: "${question.questionText}"`)
+                        new Error(
+                              `Each question must have exactly 1 correct option. Question: "${question.questionText}"`
+                        )
                   );
             }
 
-            if (new Set(options).size !== options.length) {
-                  return next(new Error(`Duplicate options found in question: "${question.questionText}"`));
+            // Validate unique options
+            const optionTexts = question.options.map((opt) => opt.optionText.toLowerCase().trim());
+            const uniqueOptions = new Set(optionTexts);
+            if (uniqueOptions.size !== optionTexts.length) {
+                  return next(new Error(`All options must be unique for question: "${question.questionText}"`));
             }
+      }
+
+      // Validate unique question texts
+      const questionTexts = this.questions.map((q) => q.questionText.toLowerCase().trim());
+      const uniqueQuestions = new Set(questionTexts);
+      if (uniqueQuestions.size !== questionTexts.length) {
+            return next(new Error('All question texts must be unique within the quiz'));
       }
 
       next();

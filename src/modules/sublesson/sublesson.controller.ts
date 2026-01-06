@@ -48,6 +48,27 @@ const createSubLesson = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+// const getSingleSubLesson = catchAsync(async (req: Request, res: Response) => {
+//   const { id } = req.params;
+  
+//   // 1. Get the main content
+//   const subLesson = await subLessonService.getSingleSubLessonFromDB(id);
+  
+//   // 2. Get the navigation pointers (Next/Prev)
+//   const navigation = await subLessonService.getNavigationIds(id);
+
+//   sendResponse(res, {
+//     statusCode: StatusCodes.OK,
+//     success: true,
+//     message: "SubLesson fetched successfully",
+//     data: {
+//       content: subLesson,
+//       navigation: navigation
+//     },
+//   });
+// });
+
 export const subLessonController = {
-  createSubLesson
+  createSubLesson,
+//   getSingleSubLesson
 }

@@ -1,10 +1,11 @@
 import { Lesson } from "./lesson.model";
-// import { Progress } from "../progress/progress.model";
+import { UserProgress } from "../progress/progress.model";
 import AppError from "../../errors/AppError";
 import { ILesson } from "./lesson.interface";
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import { Course } from "../course/course.model";
+import { Sublesson } from "../sublesson/sublesson.model";
 
 // const createLessonIntoDb = async (payload: ILesson) => {
 //  if (payload.subLessons?.length) {
@@ -98,7 +99,38 @@ const createLessonIntoDb = async (payload: ILesson) => {
   }
 };
 
+
+const updateLessonInDB = async (id: string, payload: Partial<ILesson>) => {
+  const isLessonExist = await Lesson.findById(id);
+  if (!isLessonExist) {
+    throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+  }
+
+  const result = await Lesson.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  });
+  return result;
+};
+
+const deleteLessonFromDB = async (id: string) => {
+  const isLessonExist = await Lesson.findById(id);
+  if (!isLessonExist) {
+    throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+  }
+
+  // Senior Practice: Use a session or delete sub-resources
+  // 1. Delete all SubLessons belonging to this Lesson
+  await Sublesson.deleteMany({ lessonId: id });
+
+  // 2. Delete the Lesson itself
+  const result = await Lesson.findByIdAndDelete(id);
+  return result;
+};
+
 export const lessonService = {
     createLessonIntoDb,
+    updateLessonInDB,
+    deleteLessonFromDB
     // getSingleLessonFromDB
 }

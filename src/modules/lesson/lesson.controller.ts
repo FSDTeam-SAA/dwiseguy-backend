@@ -63,6 +63,31 @@ export const createLesson = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+const updateLesson = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await lessonService.updateLessonInDB(id, req.body);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Lesson updated successfully',
+    data: result,
+  });
+});
+
+const deleteLesson = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await lessonService.deleteLessonFromDB(id);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Lesson and its content deleted successfully',
+    data: null,
+  });
+});
+
 // export const getSingleLesson = catchAsync(async (req: Request, res: Response) => {
 //   const { id } = req.params;
 //   const userId = req.user._id; // Extracted from auth middleware
@@ -79,5 +104,8 @@ export const createLesson = catchAsync(async (req: Request, res: Response) => {
 
 export const lessonController = {
     createLesson,
+    deleteLesson,
+    updateLesson
+
     // getSingleLesson
 };
