@@ -7,46 +7,93 @@ import { subLessonService } from "./sublesson.service";
 import sendResponse from "../../utils/sendResponse";
 
 const createSubLesson = catchAsync(async (req: Request, res: Response) => {
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const files = req.files as any;
+  if (!req.body.data) throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
   
-  // DEBUG: Check this in your VS Code terminal
-  console.log('Received Files:', files); 
-
-  if (!req.body.data) throw new AppError(StatusCodes.BAD_REQUEST, "Sublesson data is required");
   const subLessonData = JSON.parse(req.body.data);
 
-  // 1. Process Images (Must match key 'images' in Postman)
-  const imageUploadPromises = (files?.images || []).map(file => 
-    uploadToCloudinary(file.path, 'image')
-  );
-  const imageResults = await Promise.all(imageUploadPromises);
-  const images = imageResults
-    .filter(res => res !== null)
-    .map(res => ({ url: res!.url, public_id: res!.public_id }));
+  // 1. Process Images
+  let images: { url: string; public_id: string }[] = [];
+  if (files?.images) {
+    const imagePromises = files.images.map((f: any) => uploadToCloudinary(f.path, 'image'));
+    const results = await Promise.all(imagePromises);
+    images = results.filter(r => r !== null).map(r => ({ url: r!.url, public_id: r!.public_id }));
+  }
 
-  // 2. Process Audio (Must match key 'audio' in Postman)
+  // 2. Process Audio
   let audio = null;
   if (files?.audio?.[0]) {
     const audioRes = await uploadToCloudinary(files.audio[0].path, 'audio');
-    if (audioRes) {
-      audio = { url: audioRes.url, public_id: audioRes.public_id };
-    }
+    if (audioRes) audio = { url: audioRes.url, public_id: audioRes.public_id };
   }
 
-  // 3. Create in DB via Service
+  // 3. Construct payload and Call Service
   const result = await subLessonService.createSubLessonIntoDb({
     ...subLessonData,
-    media: { images, audio }
+    media: { images, audio } // This keys MUST match your Schema
   });
 
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
     success: true,
-    message: 'Sublesson added with media and linked to Lesson successfully',
+    message: 'Sublesson added and linked to Lesson successfully',
     data: result,
   });
 });
 
+const updateSubLesson = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const files = req.files as any;
+
+  // 1. Parse text data (Handle the case where data might be stringified JSON)
+  let updateData = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
+
+  // 2. Process Optional Images
+  if (files?.images && files.images.length > 0) {
+    const imageUploadPromises = files.images.map((file: any) => 
+      uploadToCloudinary(file.path, 'image')
+    );
+    const imageResults = await Promise.all(imageUploadPromises);
+    const newImages = imageResults
+      .filter((res): res is { url: string; public_id: string } => res !== null)
+      .map(res => ({ url: res.url, public_id: res.public_id }));
+
+    // Nest inside media object as per your schema
+    updateData.media = { ...updateData.media, images: newImages };
+  }
+
+  // 3. Process Optional Audio
+  if (files?.audio?.[0]) {
+    const audioRes = await uploadToCloudinary(files.audio[0].path, 'audio');
+    if (audioRes) {
+      updateData.media = { 
+        ...updateData.media, 
+        audio: { url: audioRes.url, public_id: audioRes.public_id } 
+      };
+    }
+  }
+
+  // 4. Pass to Service
+  const result = await subLessonService.updateSubLessonInDB(id, updateData);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Sublesson updated successfully and synced with Lesson',
+    data: result,
+  });
+});
+const deleteSubLesson = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await subLessonService.deleteSubLessonFromDB(id);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Sublesson deleted and removed from Lesson array',
+    data: null,
+  });
+});
 
 // const getSingleSubLesson = catchAsync(async (req: Request, res: Response) => {
 //   const { id } = req.params;
@@ -70,5 +117,8 @@ const createSubLesson = catchAsync(async (req: Request, res: Response) => {
 
 export const subLessonController = {
   createSubLesson,
+  deleteSubLesson,
+  updateSubLesson
+
 //   getSingleSubLesson
 }

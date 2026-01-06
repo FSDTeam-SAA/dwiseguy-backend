@@ -1,11 +1,11 @@
 import { Lesson } from "./lesson.model";
-import { UserProgress } from "../progress/progress.model";
+// import { UserProgress } from "../progress/progress.model";
 import AppError from "../../errors/AppError";
 import { ILesson } from "./lesson.interface";
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import { Course } from "../course/course.model";
-import { Sublesson } from "../sublesson/sublesson.model";
+import { SubLesson } from "../sublesson/sublesson.model";
 
 // const createLessonIntoDb = async (payload: ILesson) => {
 //  if (payload.subLessons?.length) {
@@ -77,10 +77,20 @@ const createLessonIntoDb = async (payload: ILesson) => {
   try {
     session.startTransaction();
 
-    // 1. Create Lesson
+    // 1. Auto-calculate order
+    const lastLesson = await Lesson.findOne({ courseId: payload.courseId })
+      .sort({ order: -1 })
+      .session(session);
+
+    payload.order = lastLesson ? lastLesson.order + 1 : 1;
+    
+    // IMPORTANT: Initialize empty array so Sublessons can be pushed later
+    payload.sublessons = []; 
+
+    // 2. Create Lesson
     const newLesson = await Lesson.create([payload], { session });
 
-    // 2. Link to Course
+    // 3. Link to Course
     const updatedCourse = await Course.findByIdAndUpdate(
       payload.courseId,
       { $push: { lessons: newLesson[0]._id } },
@@ -106,31 +116,66 @@ const updateLessonInDB = async (id: string, payload: Partial<ILesson>) => {
     throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
   }
 
-  const result = await Lesson.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
-  return result;
-};
-
-const deleteLessonFromDB = async (id: string) => {
-  const isLessonExist = await Lesson.findById(id);
-  if (!isLessonExist) {
-    throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+  // If the courseId is being changed, we need to move the reference 
+  // from the old course to the new course (Complex scenario)
+  if (payload.courseId && payload.courseId.toString() !== isLessonExist.courseId.toString()) {
+     const session = await mongoose.startSession();
+     try {
+       session.startTransaction();
+       
+       // 1. Remove from old course
+       await Course.findByIdAndUpdate(isLessonExist.courseId, { $pull: { lessons: id } }, { session });
+       
+       // 2. Add to new course
+       await Course.findByIdAndUpdate(payload.courseId, { $push: { lessons: id } }, { session });
+       
+       // 3. Update Lesson
+       const result = await Lesson.findByIdAndUpdate(id, payload, { new: true, session });
+       
+       await session.commitTransaction();
+       return result;
+     } catch (error) {
+       await session.abortTransaction();
+       throw error;
+     } finally {
+       session.endSession();
+     }
   }
 
-  // Senior Practice: Use a session or delete sub-resources
-  // 1. Delete all SubLessons belonging to this Lesson
-  await Sublesson.deleteMany({ lessonId: id });
+  // Simple update (Title, order, etc.)
+  return await Lesson.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+};
 
-  // 2. Delete the Lesson itself
-  const result = await Lesson.findByIdAndDelete(id);
-  return result;
+const deleteLessonFromDb = async (id: string) => {
+  const lesson = await Lesson.findById(id);
+  if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    // 1. CHAIN SYNC: Remove from Course array
+    await Course.findByIdAndUpdate(lesson.courseId, { $pull: { lessons: id } }, { session });
+
+    // 2. CASCADING DELETE: Delete all Sublessons belonging to this Lesson
+    await SubLesson.deleteMany({ lessonId: id }, { session });
+
+    // 3. Delete Lesson document
+    const result = await Lesson.findByIdAndDelete(id, { session });
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 };
 
 export const lessonService = {
     createLessonIntoDb,
     updateLessonInDB,
-    deleteLessonFromDB
+    deleteLessonFromDb
     // getSingleLessonFromDB
 }
