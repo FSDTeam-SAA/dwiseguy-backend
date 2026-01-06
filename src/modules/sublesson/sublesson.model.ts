@@ -6,17 +6,17 @@ const sublessonSchema = new Schema<ISublesson>({
   title: { type: String, required: true },
   content: { type: String, required: true },
   media: {
-    images: [{ url: String, public_id: String }],
+    images: [{ 
+      url: String, 
+      public_id: String 
+    }],
     audio: {
-      type: { url: String, public_id: String },
-      default: null
+      url: String,
+      public_id: String
     }
   },
   isExercise: { type: Boolean, default: false },
   order: { type: Number, required: true }
 }, { timestamps: true });
 
-// Index for fast retrieval of a lesson's parts
-sublessonSchema.index({ lessonId: 1, order: 1 }, { unique: true });
-
-export const Sublesson = model<ISublesson>('Sublesson', sublessonSchema);
+export const SubLesson = model<ISublesson>('Sublesson', sublessonSchema);

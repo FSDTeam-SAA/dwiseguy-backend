@@ -4,20 +4,27 @@ import { Lesson } from '../lesson/lesson.model';
 import AppError from '../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
 import { ISublesson } from './sublesson.interface';
-import { Sublesson } from './sublesson.model';
+import { SubLesson } from './sublesson.model';
+import { deleteFromCloudinary } from '../../utils/cloudinary';
+
+
+
+
+
 
 const createSubLessonIntoDb = async (payload: ISublesson) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
-    // 1. Create Sublesson
-    const newSubLesson = await Sublesson.create([payload], { session });
+    // 1. Create the Sublesson
+    // Using [payload] returns an array. Ensure the media object is preserved.
+    const [newSubLesson] = await SubLesson.create([payload], { session });
 
-    // 2. Link to Parent Lesson
+    // 2. Push ID into Lesson's sublessons array (The Chain)
     const updatedLesson = await Lesson.findByIdAndUpdate(
       payload.lessonId,
-      { $push: { sublessons: newSubLesson[0]._id } },
+      { $push: { sublessons: newSubLesson._id } },
       { session, new: true }
     );
 
@@ -27,7 +34,7 @@ const createSubLessonIntoDb = async (payload: ISublesson) => {
 
     await session.commitTransaction();
     await session.endSession();
-    return newSubLesson[0];
+    return newSubLesson;
   } catch (error: any) {
     await session.abortTransaction();
     await session.endSession();
@@ -36,59 +43,141 @@ const createSubLessonIntoDb = async (payload: ISublesson) => {
 };
 
 const findSubLessonsByLessonId = async (lessonId: string) => {
-  const subLessons = await Sublesson.find({ lessonId });
+  const subLessons = await SubLesson.find({ lessonId });
   return subLessons;
 };
 
-const getNavigationIds = async (subLessonId: string) => {
-  const currentSub = await Sublesson.findById(subLessonId);
-  if (!currentSub) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
+// const getNavigationIds = async (subLessonId: string) => {
+//   const currentSub = await subLesson.findById(subLessonId);
+//   if (!currentSub) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
 
-  const currentLesson = await Lesson.findById(currentSub.lessonId);
-  if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
+//   const currentLesson = await Lesson.findById(currentSub.lessonId);
+//   if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
 
-  // 1. FIND NEXT
-  let nextSub = await Sublesson.findOne({
-    lessonId: currentSub.lessonId,
-    order: { $gt: currentSub.order }
-  }).sort({ order: 1 });
+//   // 1. FIND NEXT
+//   let nextSub = await subLesson.findOne({
+//     lessonId: currentSub.lessonId,
+//     order: { $gt: currentSub.order }
+//   }).sort({ order: 1 });
 
-  if (!nextSub) {
-    // Look in the next lesson
-    const nextLesson = await Lesson.findOne({
-      courseId: currentLesson.courseId,
-      order: { $gt: currentLesson.order }
-    }).sort({ order: 1 });
+//   if (!nextSub) {
+//     // Look in the next lesson
+//     const nextLesson = await Lesson.findOne({
+//       courseId: currentLesson.courseId,
+//       order: { $gt: currentLesson.order }
+//     }).sort({ order: 1 });
 
-    if (nextLesson) {
-      nextSub = await Sublesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
-    }
+//     if (nextLesson) {
+//       nextSub = await subLesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
+//     }
+//   }
+
+//   // 2. FIND PREVIOUS
+//   let prevSub = await subLesson.findOne({
+//     lessonId: currentSub.lessonId,
+//     order: { $lt: currentSub.order }
+//   }).sort({ order: -1 });
+
+//   if (!prevSub) {
+//     // Look in the previous lesson
+//     const prevLesson = await Lesson.findOne({
+//       courseId: currentLesson.courseId,
+//       order: { $lt: currentLesson.order }
+//     }).sort({ order: -1 });
+
+//     if (prevLesson) {
+//       prevSub = await subLesson.findOne({ lessonId: prevLesson._id }).sort({ order: -1 });
+//     }
+//   }
+
+//   return {
+//     previousId: prevSub?._id || null,
+//     nextId: nextSub?._id || null,
+//     currentLessonTitle: currentLesson.title
+//   };
+// };
+
+
+const updateSubLessonInDB = async (id: string, payload: any) => {
+  const isExist = await SubLesson.findById(id);
+  if (!isExist) {
+    throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found with this ID");
   }
 
-  // 2. FIND PREVIOUS
-  let prevSub = await Sublesson.findOne({
-    lessonId: currentSub.lessonId,
-    order: { $lt: currentSub.order }
-  }).sort({ order: -1 });
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
 
-  if (!prevSub) {
-    // Look in the previous lesson
-    const prevLesson = await Lesson.findOne({
-      courseId: currentLesson.courseId,
-      order: { $lt: currentLesson.order }
-    }).sort({ order: -1 });
-
-    if (prevLesson) {
-      prevSub = await Sublesson.findOne({ lessonId: prevLesson._id }).sort({ order: -1 });
+    // 1. Handle Lesson ID "Chain" Sync
+    if (payload.lessonId && payload.lessonId.toString() !== isExist.lessonId.toString()) {
+      await Lesson.findByIdAndUpdate(isExist.lessonId, { $pull: { sublessons: id } }, { session });
+      await Lesson.findByIdAndUpdate(payload.lessonId, { $push: { sublessons: id } }, { session });
     }
-  }
 
-  return {
-    previousId: prevSub?._id || null,
-    nextId: nextSub?._id || null,
-    currentLessonTitle: currentLesson.title
-  };
+    // 2. Flatten media updates to prevent overwriting the whole media object
+    // This allows updating images WITHOUT losing the existing audio
+    const { media, ...otherData } = payload;
+    const updateQuery: any = { ...otherData };
+
+    if (media?.images) updateQuery['media.images'] = media.images;
+    if (media?.audio) updateQuery['media.audio'] = media.audio;
+
+    const result = await SubLesson.findByIdAndUpdate(
+      id, 
+      { $set: updateQuery }, 
+      { new: true, session, runValidators: true }
+    );
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 };
+
+const deleteSubLessonFromDB = async (id: string) => {
+  const subLessonData = await SubLesson.findById(id);
+  if (!subLessonData) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    // 1. Pull the ID out of the Parent Lesson's array
+    await Lesson.findByIdAndUpdate(
+      subLessonData.lessonId,
+      { $pull: { sublessons: id } },
+      { session }
+    );
+
+    // 2. MEDIA CLEANUP (Optional but recommended)
+    // Delete Audio from Cloudinary
+    if (subLessonData.media?.audio?.public_id) {
+      await deleteFromCloudinary(subLessonData.media.audio.public_id, 'audio');
+    }
+    // Delete all Images from Cloudinary
+    if (subLessonData.media?.images && subLessonData.media.images.length > 0) {
+      for (const img of subLessonData.media.images) {
+        await deleteFromCloudinary(img.public_id, 'image');
+      }
+    }
+
+    // 3. Delete the actual Sublesson document
+    const result = await SubLesson.findByIdAndDelete(id, { session });
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
 
 // const getSingleSubLessonFromDB = async (id: string) => {
 //   const subLesson = await Sublesson.findById(id).populate('lessonId');
@@ -143,6 +232,7 @@ const getNavigationIds = async (subLessonId: string) => {
 //   };
 // };
 
-export const subLessonService = { createSubLessonIntoDb, findSubLessonsByLessonId, getNavigationIds, 
+export const subLessonService = { createSubLessonIntoDb, findSubLessonsByLessonId, 
+ deleteSubLessonFromDB, updateSubLessonInDB, 
     // getSingleSubLessonFromDB
     };
