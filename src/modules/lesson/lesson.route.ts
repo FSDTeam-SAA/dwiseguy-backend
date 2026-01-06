@@ -15,6 +15,10 @@ router.post(
   lessonController.createLesson
 );
 
+// Admin only routes
+router.patch('/update/:id',  lessonController.updateLesson);
+router.delete('/delete/:id',  lessonController.deleteLesson);
+
 // STUDENT ROUTES
 // This will be accessible via {{baseUrl}}/api/v1/lesson/get-lesson/:id
 // router.get(
