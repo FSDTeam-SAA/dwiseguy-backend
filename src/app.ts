@@ -3,8 +3,8 @@ import { globalErrorHandler } from './middlewares/globalErrorHandler';
 import { notFound } from './middlewares/notFound';
 import router from './routes';
 import cors from 'cors';
-import session from 'express-session';
 import cookieParser from 'cookie-parser';
+
 
 const app = express();
 app.use(express.json());
@@ -19,7 +19,7 @@ const corsOptions = {
 
 
 app.use(cors(corsOptions));
-
+app.use(cookieParser());
 app.use('/api/v1', router);
 
 app.use(notFound as never);

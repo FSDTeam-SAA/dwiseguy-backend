@@ -1,159 +1,254 @@
-// progress.service.ts
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../errors/AppError';
 import { Course } from '../course/course.model';
 import { Lesson } from '../lesson/lesson.model';
 import { Sublesson } from '../sublesson/sublesson.model';
 import { UserProgress } from './progress.model';
-import { title } from 'node:process';
 import { Types } from 'mongoose';
 
-// progress.service.ts
-
 const initializeProgress = async (userId: string, courseId: string) => {
-  // 1. Check if progress already exists
-  const existingProgress = await UserProgress.findOne({ userId, courseId });
-  if (existingProgress) return existingProgress;
+    const existingProgress = await UserProgress.findOne({ userId, courseId });
+    if (existingProgress) return existingProgress;
 
-  // 2. Find the "Starting" Lesson (Dynamically find the lowest order)
-  const firstLesson = await Lesson.findOne({ courseId })
-    .sort({ order: 1 }) // Sorts ascending: 1, 2, 3 or 5, 10, 15... 
-    .limit(1);
+    // Dynamically find the start of the course (Lowest Order)
+    const firstLesson = await Lesson.findOne({ courseId }).sort({ order: 1 });
+    if (!firstLesson) throw new AppError(StatusCodes.BAD_REQUEST, "No lessons in this course.");
 
-  if (!firstLesson) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "This course has no lessons yet.");
-  }
+    const firstSub = await Sublesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 });
 
-  // 3. Find the "Starting" Sublesson (Dynamically find the lowest order)
-  const firstSubLesson = await Sublesson.findOne({ 
-    lessonId: firstLesson._id 
-  })
-  .sort({ order: 1 })
-  .limit(1);
-
-  // 4. Create record pointing to whatever the lowest order was
-  const newProgress = await UserProgress.create({
-    userId,
-    courseId,
-    currentLessonId: firstLesson._id,
-    currentSubLessonId: firstSubLesson?._id || null, 
-    completedSubLessons: [],
-    completedLessons: [],
-    isCourseCompleted: false
-  });
-
-  return newProgress;
+    return await UserProgress.create({
+        userId: new Types.ObjectId(userId),
+        courseId: new Types.ObjectId(courseId),
+        currentLessonId: firstLesson._id,
+        currentSubLessonId: firstSub ? firstSub._id : null,
+    });
 };
 
 const getCourseDetailsWithProgress = async (userId: string, courseId: string) => {
-  // 1. Fetch Course with nested Lessons and Sublessons
-  const course = await Course.findById(courseId).populate({
-    path: 'lessons',
-    populate: { path: 'sublessons' }
-  });
+    // 1. Fetch Course with nested Lessons and Sublessons
+    const course = await Course.findById(courseId).populate({
+        path: 'lessons',
+        options: { sort: { order: 1 } },
+        populate: { path: 'sublessons', options: { sort: { order: 1 } } }
+    });
 
-  if (!course) throw new AppError(StatusCodes.NOT_FOUND, "Course not found");
+    if (!course) throw new AppError(StatusCodes.NOT_FOUND, "Course not found");
 
-  // 2. Fetch User Progress
-  const progress = await UserProgress.findOne({ userId, courseId });
+    // 2. Fetch User Progress
+    const progress = await UserProgress.findOne({ userId, courseId });
 
-  // 3. Map progress status to the data (Senior approach: Don't modify DB, just return mapped data)
-  const lessonData = course.lessons.map((lesson: any) => {
-    const isLessonCompleted = progress?.completedLessons.includes(lesson._id);
-    const isCurrentLesson = progress?.currentLessonId?.toString() === lesson._id.toString();
-    
-    // Logic: A lesson is unlocked if it's the first one, completed, or the current one
-    const isUnlocked = lesson.order === 1 || isLessonCompleted || isCurrentLesson;
+    // 3. DYNAMIC PERCENTAGE CALCULATION
+    // Flatten all sublessons from all lessons into one array to get the total count
+    const allSubLessons = course.lessons.reduce((acc: any[], lesson: any) => {
+        return [...acc, ...lesson.sublessons];
+    }, []);
+
+    const totalSubLessons = allSubLessons.length;
+    const completedCount = progress?.completedSubLessons?.length || 0;
+
+    // Calculate percentage (handle division by zero if course is empty)
+    const completionPercentage = totalSubLessons > 0
+        ? Math.round((completedCount / totalSubLessons) * 100)
+        : 0;
+
+    // 4. Map the hierarchy (Same logic as before)
+    const lessonData = course.lessons.map((lesson: any, index: number) => {
+        const isCompleted = progress?.completedLessons.some(id => id.equals(lesson._id));
+        const isCurrent = progress?.currentLessonId?.equals(lesson._id);
+
+        // Check if previous lesson was completed to unlock current
+        const previousLesson = index > 0 ? course.lessons[index - 1] : null;
+        const isPreviousCompleted = previousLesson
+            ? progress?.completedLessons.some(id => id.equals(previousLesson._id))
+            : false;
+
+        const isUnlocked = index === 0 || isCompleted || isCurrent || isPreviousCompleted;
+
+        return {
+            _id: lesson._id,
+            title: lesson.title,
+            order: lesson.order,
+            isUnlocked,
+            isCompleted: isCompleted || false,
+            sublessons: lesson.sublessons.map((sub: any) => ({
+                _id: sub._id,
+                title: sub.title,
+                order: sub.order,
+                isCompleted: progress?.completedSubLessons.some(id => id.equals(sub._id)),
+                isLocked: !isUnlocked
+            }))
+        };
+    });
 
     return {
-      ...lesson.toObject(),
-      isUnlocked,
-      isCompleted: isLessonCompleted,
-      sublessons: lesson.sublessons.map((sub: any) => ({
-        ...sub.toObject(),
-        isCompleted: progress?.completedSubLessons.includes(sub._id),
-        isLocked: !isUnlocked // Simple logic: if lesson is locked, all subs are locked
-      }))
+        courseTitle: course.courseTitle,
+        stats: {
+            totalSubLessons,
+            completedSubLessons: completedCount,
+            completionPercentage // The dynamic value for your progress bar
+        },
+        isCourseCompleted: progress?.isCourseCompleted || false,
+        lessons: lessonData
     };
-  });
-
-  return {
-    courseName: course.courseTitle,
-    progress: progress ? {
-      completedCount: progress.completedSubLessons.length,
-      isCourseCompleted: progress.isCourseCompleted
-    } : null,
-    lessons: lessonData
-  };
 };
 
 const updateStudentProgress = async (userId: string, subLessonId: string) => {
-  // 1. Validate the Sublesson and get its parent Lesson
-  const currentSub = await Sublesson.findById(subLessonId);
-  if (!currentSub) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
+    // 1. Find the Sublesson
+    const currentSub = await Sublesson.findById(subLessonId);
+    if (!currentSub) throw new AppError(StatusCodes.NOT_FOUND, "Sublesson not found");
 
-  const lessonId = currentSub.lessonId;
-  const currentLesson = await Lesson.findById(lessonId);
-  if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Parent Lesson not found");
+    // 2. Find the Parent Lesson to get the Course ID (Climbing the ladder)
+    const currentLesson = await Lesson.findById(currentSub.lessonId);
+    if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Parent Lesson not found");
 
-  // 2. Mark this sublesson as completed (Idempotent)
-  const progress = await UserProgress.findOneAndUpdate(
-    { userId, courseId: currentLesson.courseId },
-    { $addToSet: { completedSubLessons: subLessonId } },
-    { new: true, upsert: true }
-  );
+    const courseId = currentLesson.courseId; // This is the ID we need for Progress
 
-  // 3. FIND NEXT SUBLESSON (In the same lesson)
-  const nextSub = await Sublesson.findOne({
-    lessonId: lessonId,
-    order: { $gt: currentSub.order } // Find the next one by order
-  }).sort({ order: 1 });
+    // 3. Find/Update the UserProgress record
+    const progress = await UserProgress.findOne({ userId, courseId });
+    if (!progress) throw new AppError(StatusCodes.NOT_FOUND, "Student is not enrolled in this course");
 
-  if (nextSub) {
-    progress.currentSubLessonId = nextSub._id as Types.ObjectId;
+    // 4. Mark Sublesson as finished ($addToSet avoids duplicates)
+    await UserProgress.updateOne(
+        { _id: progress._id },
+        { $addToSet: { completedSubLessons: new Types.ObjectId(subLessonId) } }
+    );
+
+    // 5. Logic: Find if there is a Next Sublesson in this lesson
+    const nextSub = await Sublesson.findOne({
+        lessonId: currentLesson._id,
+        order: { $gt: currentSub.order }
+    }).sort({ order: 1 });
+
+    if (nextSub) {
+        progress.currentSubLessonId = nextSub._id as Types.ObjectId;
+        await progress.save();
+        return { status: 'NEXT_SUB_UNLOCKED', nextId: nextSub._id };
+    }
+
+    // 6. No more Sublessons? Complete this Lesson and find the Next Lesson
+    await UserProgress.updateOne(
+        { _id: progress._id },
+        { $addToSet: { completedLessons: currentLesson._id } }
+    );
+
+    const nextLesson = await Lesson.findOne({
+        courseId: courseId,
+        order: { $gt: currentLesson.order }
+    }).sort({ order: 1 });
+
+    if (nextLesson) {
+        const firstSubOfNext = await Sublesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
+
+        progress.currentLessonId = nextLesson._id as Types.ObjectId;
+        progress.currentSubLessonId = firstSubOfNext ? (firstSubOfNext._id as Types.ObjectId) : null;
+        await progress.save();
+        return { status: 'NEXT_LESSON_UNLOCKED', nextId: nextLesson._id };
+    }
+
+    // 7. If no next lesson, the course is complete
+    progress.isCourseCompleted = true;
     await progress.save();
-    return { 
-        status: 'SUBLESSON_UNLOCKED', 
-        nextId: nextSub._id, 
-        message: "Moving to next part of the lesson." 
+    return { status: 'COURSE_COMPLETED' };
+};
+
+
+const getResumePoint = async (userId: string, courseId: string) => {
+  // 1. Fetch progress and populate the objects
+  const progress = await UserProgress.findOne({ userId, courseId })
+    .populate({ path: 'currentLessonId', select: 'title' })
+    .populate({ path: 'currentSubLessonId', select: 'title' });
+
+  if (!progress) {
+    throw new AppError(StatusCodes.NOT_FOUND, "No progress found. Please start the course first.");
+  }
+
+  // 2. Logic for Course Completion
+  if (progress.isCourseCompleted) {
+    const firstLesson = await Lesson.findOne({ courseId }).sort({ order: 1 });
+    // Find the first sublesson of that lesson
+    const firstSub = firstLesson 
+      ? await Sublesson.findOne({ lessonId: firstLesson._id }).sort({ order: 1 }) 
+      : null;
+
+    return {
+      message: "Course completed! You can review from the start.",
+      lessonTitle: firstLesson?.title || "Beginning",
+      subLessonTitle: firstSub?.title || "First Exercise",
+      lessonId: firstLesson?._id,
+      subLessonId: firstSub?._id,
+      isCourseCompleted: true
     };
   }
 
-  // 4. NO MORE SUBS: Mark the whole Lesson as completed
-  await UserProgress.findOneAndUpdate(
-    { userId, courseId: currentLesson.courseId },
-    { $addToSet: { completedLessons: lessonId } }
-  );
+  // 3. Logic for Standard Resume (Student is in the middle of a course)
+  // Use 'any' to avoid TS errors with Mongoose Document types for .title access
+  const currentLesson = progress.currentLessonId as any;
+  const currentSub = progress.currentSubLessonId as any;
 
-  // 5. FIND NEXT LESSON (In the same course)
-  const nextLesson = await Lesson.findOne({
-    courseId: currentLesson.courseId,
-    order: { $gt: currentLesson.order }
-  }).sort({ order: 1 });
+  return {
+    message: "Continue your practice",
+    lessonTitle: currentLesson?.title || "Next Lesson",
+    subLessonTitle: currentSub?.title || "Next Exercise",
+    lessonId: currentLesson?._id,
+    subLessonId: currentSub?._id,
+    isCourseCompleted: false
+  };
+};
 
-  if (nextLesson) {
-    // Find the first sublesson of that new lesson to point the student there
-    const firstSubOfNext = await Sublesson.findOne({ lessonId: nextLesson._id }).sort({ order: 1 });
-    
-    progress.currentLessonId = nextLesson._id as Types.ObjectId;
-    progress.currentSubLessonId = (firstSubOfNext?._id || null) as Types.ObjectId;
-    await progress.save();
-    
-    return { 
-        status: 'LESSON_UNLOCKED', 
-        nextId: nextLesson._id, 
-        message: "Lesson complete! New lesson unlocked." 
-    };
-  }
 
-  // 6. FINISHED ENTIRE COURSE
-  progress.isCourseCompleted = true;
-  await progress.save();
-  return { status: 'COURSE_COMPLETED', message: "You've finished the entire course!" };
+
+const getLeaderboard = async () => {
+  const result = await UserProgress.aggregate([
+    // 1. Only look at records where something has been completed
+    { 
+      $match: { 
+        "completedSubLessons.0": { $exists: true } 
+      } 
+    },
+    // 2. Group by User to sum progress across all courses
+    {
+      $group: {
+        _id: '$userId',
+        totalCompletedSteps: { $sum: { $size: '$completedSubLessons' } },
+        coursesStarted: { $sum: 1 }
+      }
+    },
+    // 3. Join with 'users' collection
+    {
+      $lookup: {
+        from: 'users', 
+        localField: '_id',
+        foreignField: '_id',
+        as: 'userDetails'
+      }
+    },
+    // 4. Flatten the user array
+    { $unwind: '$userDetails' },
+    // 5. Select fields based on your provided User Schema
+    {
+      $project: {
+        _id: 1,
+        totalCompletedSteps: 1,
+        coursesStarted: 1,
+        name: '$userDetails.name',
+        username: '$userDetails.username',
+        avatar: '$userDetails.avatar', // This is an object in your DB
+        role: '$userDetails.role'
+      }
+    },
+    // 6. Sort by top performer
+    { $sort: { totalCompletedSteps: -1 } },
+    { $limit: 10 }
+  ]);
+
+  return result;
 };
 
 export const progressService = {
-  initializeProgress,
-  getCourseDetailsWithProgress,
-   updateStudentProgress 
+
+    initializeProgress,
+    getCourseDetailsWithProgress,
+    updateStudentProgress,
+    getResumePoint,
+    getLeaderboard
 };
