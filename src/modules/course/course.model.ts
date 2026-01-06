@@ -17,8 +17,22 @@ const courseSchema = new Schema<ICourse>(
                         ref: 'Lesson',
                   },
             ],
+            isActive: { type: Boolean, default: true },
       },
       { timestamps: true }
 );
+
+// pre middleware for check name is not be duplicate
+courseSchema.pre('save', async function (next) {
+      if (this.isModified('courseTitle')) {
+            const duplicate = await Course.findOne({ courseTitle: this.courseTitle });
+            if (duplicate) {
+                  throw new Error('Course title already exists');
+            }
+      }
+      next();
+});
+
+
 
 export const Course: Model<ICourse> = mongoose.model<ICourse>('Course', courseSchema);
