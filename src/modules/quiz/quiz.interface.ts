@@ -3,25 +3,26 @@ import { Document, Types } from 'mongoose';
 // Single Option Interface
 export interface IOption {
       optionText: string;
+      isCorrect: boolean;
 }
+
 // Single Question Interface
 export interface IQuestion {
       questionText: string;
-      options: IOption[]; // exactly 4 options
-      correctAnswer: string; // ✅ admin writes this
-      // explanation?: string;
+      options: IOption[]; // 4 options, one correct
+      // explanation?: string; // Optional: explain why answer is correct
 }
 
 // Main Quiz Interface
 export interface IQuiz extends Document {
       _id: string;
-      quizName: string;
-      lessonId: Types.ObjectId;
-      classId: Types.ObjectId;
-      questions: IQuestion[];
-      timeLimit: number;
-      totalMarks: number;
-      createdBy: Types.ObjectId;
+      quizName: string; // Unique per class/lesson
+      lessonId: Types.ObjectId; // TODO: Uncomment when Lesson model is ready - Reference to Lesson
+      classId: Types.ObjectId; // TODO: Uncomment when Class model is ready - Reference to Class
+      questions: IQuestion[]; // Array of 20 questions
+      timeLimit: number; // Time limit in minutes (default 20)
+      totalMarks: number; // Total marks (default 20, 1 mark per question)
+      createdBy: Types.ObjectId; // Admin who created the quiz
       createdAt: Date;
       updatedAt: Date;
 }

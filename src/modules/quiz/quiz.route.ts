@@ -22,7 +22,7 @@ const router = express.Router();
 router.get('/leaderboard', authGuard, isAdmin, getLeaderboard);
 
 // Create Quiz (Admin)
-router.post('/', authGuard, isAdmin, validateRequest(createQuizSchema), createQuiz);
+router.post('/', authGuard, isAdmin, createQuiz);
 
 // Get All Quizzes (Admin)
 router.get('/', authGuard, isAdmin, getAllQuizzes);
