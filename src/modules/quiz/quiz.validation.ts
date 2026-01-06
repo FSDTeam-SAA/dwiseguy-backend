@@ -54,12 +54,12 @@ export const createQuizSchema = z.object({
 export const updateQuizSchema = z.object({
       body: z.object({
             quizName: z.string().min(3, 'Quiz name must be at least 3 characters').trim().optional(),
+
             questions: z
-                  .array(questionSchema)
-                  .length(20, 'Quiz must have exactly 20 questions')
+                  .array(questionSchema) // remove .length(20)
                   .refine(
                         (questions) => {
-                              // Check all question texts are unique
+                              if (!questions) return true; // skip if not provided
                               const questionTexts = questions.map((q) => q.questionText.toLowerCase().trim());
                               const uniqueQuestions = new Set(questionTexts);
                               return uniqueQuestions.size === questionTexts.length;
@@ -67,6 +67,7 @@ export const updateQuizSchema = z.object({
                         { message: 'All question texts must be unique within the quiz' }
                   )
                   .optional(),
+
             timeLimit: z.number().min(1).max(120).optional(),
       }),
 });
@@ -77,7 +78,7 @@ export const submitQuizSchema = z.object({
             answers: z
                   .array(
                         z.object({
-                              questionText: z.string().min(1, 'Question text is required'),
+                              questionId: z.string().min(1, 'Question ID is required'), // ✅ Changed from questionText
                               selectedOption: z.string().min(1, 'Selected option is required'),
                         })
                   )

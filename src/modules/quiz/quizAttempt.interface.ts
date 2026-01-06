@@ -2,7 +2,7 @@ import { Document, Types } from 'mongoose';
 
 // Student's answer for a single question
 export interface IStudentAnswer {
-      questionText: string;
+      questionId: string;
       selectedOption: string;
       isCorrect: boolean;
       correctOption: string;
@@ -27,7 +27,7 @@ export interface IQuizAttempt extends Document {
 export type TSubmitQuiz = {
       quizId: string;
       answers: {
-            questionText: string;
+            questionId: string;
             selectedOption: string;
       }[];
       timeTaken: number; // in seconds

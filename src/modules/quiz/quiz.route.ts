@@ -25,7 +25,7 @@ router.get('/leaderboard', authGuard, isAdmin, getLeaderboard);
 router.post('/', authGuard, isAdmin, createQuiz);
 
 // Get All Quizzes (Admin)
-router.get('/', authGuard, isAdmin, getAllQuizzes);
+router.get('/', authGuard, getAllQuizzes);
 
 // Get Quiz by ID (Admin) - with correct answers
 router.get('/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizById);

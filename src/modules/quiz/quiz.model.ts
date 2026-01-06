@@ -24,7 +24,6 @@ const questionSchema = new Schema<IQuestion>(
                   type: String,
                   required: true,
                   trim: true,
-                  unique: true,
             },
             options: {
                   type: [optionSchema],
@@ -38,7 +37,7 @@ const questionSchema = new Schema<IQuestion>(
             },
             // explanation: { type: String }, // TODO: Add later if needed
       },
-      { _id: false }
+      { _id: true }
 );
 
 // Main Quiz Schema
@@ -64,7 +63,8 @@ const quizSchema = new Schema<IQuiz>(
                   required: true,
                   validate: {
                         validator: function (questions: IQuestion[]) {
-                              return questions.length === 20;
+                              // Only enforce 20 questions if creating a new document
+                              return this.isNew ? questions.length === 20 : true;
                         },
                         message: 'Quiz must have exactly 20 questions',
                   },

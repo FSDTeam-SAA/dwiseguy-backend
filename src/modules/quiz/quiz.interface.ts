@@ -8,6 +8,8 @@ export interface IOption {
 
 // Single Question Interface
 export interface IQuestion {
+      // correctAnswer: any;
+      _id: string;
       questionText: string;
       options: IOption[]; // 4 options, one correct
       // explanation?: string; // Optional: explain why answer is correct
