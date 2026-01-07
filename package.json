@@ -9,7 +9,8 @@
             "prettier:check": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\"",
             "lint": "eslint . --ext .ts",
             "start": "node dist/server.js",
-            "build": "tsc"
+            "build": "tsc",
+            "seed": "ts-node src/scripts/seed.ts"
       },
       "keywords": [],
       "author": "",
