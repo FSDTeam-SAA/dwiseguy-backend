@@ -1,10 +1,10 @@
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../errors/AppError';
 import { Course } from '../course/course.model';
-import { Lesson } from '../lesson/lesson.model';
+import { Lesson } from '../module/module.model';
 import { UserProgress } from './progress.model';
 import { Types } from 'mongoose';
-import { SubLesson } from '../sublesson/sublesson.model';
+import { SubLesson } from '../lesson/lesson.model';
 
 const initializeProgress = async (userId: string, courseId: string) => {
 
