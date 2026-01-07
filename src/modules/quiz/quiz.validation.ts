@@ -27,20 +27,18 @@ const questionSchema = z.object({
                   },
                   { message: 'All options must be unique within a question' }
             ),
-      // explanation: z.string().optional(), // TODO: Add later if needed
 });
 
 export const createQuizSchema = z.object({
       body: z.object({
             quizName: z.string().min(3, 'Quiz name must be at least 3 characters').trim(),
-            lessonId: z.string().min(1, 'Lesson ID is required'), // TODO: Uncomment when Lesson model is ready
-            classId: z.string().min(1, 'Class ID is required'), // TODO: Uncomment when Class model is ready
+            lessonId: z.string().min(1, 'Lesson ID is required'), 
+            classId: z.string().min(1, 'Class ID is required'), 
             questions: z
                   .array(questionSchema)
                   .length(20, 'Quiz must have exactly 20 questions')
                   .refine(
                         (questions) => {
-                              // Check all question texts are unique
                               const questionTexts = questions.map((q) => q.questionText.toLowerCase().trim());
                               const uniqueQuestions = new Set(questionTexts);
                               return uniqueQuestions.size === questionTexts.length;

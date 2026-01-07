@@ -1,7 +1,8 @@
 import AppError from '../../errors/AppError';
-import { Quiz } from './quiz.model';
-import { QuizAttempt } from './quizAttempt.model';
+
+import { Quiz } from '../quiz/quiz.model';
 import { TSubmitQuiz } from './quizAttempt.interface';
+import { QuizAttempt } from './quizAttempt.model';
 
 /* ===============================
    Student Quiz Attempt Services

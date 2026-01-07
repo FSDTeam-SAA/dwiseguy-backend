@@ -31,6 +31,7 @@ export const getAllQuizzes = catchAsync(async (req: Request, res: Response) => {
 
 export const getQuizById = catchAsync(async (req: Request, res: Response) => {
       const { id } = req.params;
+      console.log(req.user);
 
       const quiz = await quizService.getQuizByIdService(id);
 

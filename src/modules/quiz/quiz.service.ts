@@ -1,7 +1,8 @@
 import AppError from '../../errors/AppError';
 import { Quiz } from './quiz.model';
-import { QuizAttempt } from './quizAttempt.model';
+
 import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
+import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
