@@ -1,6 +1,5 @@
 import { Document, Model, Types, Schema } from 'mongoose';
 import { ILesson } from '../lesson/lesson.interface';
-import { ISublesson } from '../sublesson/sublesson.interface';
 
 export interface Iinstrument extends Document {
       _id: string;
@@ -23,7 +22,7 @@ export type TCreateInstrument = {
       level?: string;
 };
 
-export type PopulatedSubLesson = ISublesson & {
+export type PopulatedSubLesson = ILesson & {
       media?: {
             images?: { public_id: string; url: string }[];
             audio?: { public_id: string; url: string };

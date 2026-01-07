@@ -6,7 +6,6 @@ import AppError from '../../errors/AppError';
 import { Instrument } from './instrument.model';
 import { buildMetaPagination } from '../../utils/pagination';
 import { Lesson } from '../lesson/lesson.model';
-import { SubLesson } from '../sublesson/sublesson.model';
 import { PopulatedInstrument } from './instrument.interface';
 
 // @desc    Create user
@@ -155,7 +154,7 @@ export const deleteInstrument = catchAsync(async (req: Request, res: Response) =
             // Delete sublessons from DB
             const sublessonIds = lesson.sublessons?.map((s) => s._id) ?? [];
             if (sublessonIds.length) {
-                  await SubLesson.deleteMany({ _id: { $in: sublessonIds } });
+                  await Lesson.deleteMany({ _id: { $in: sublessonIds } });
             }
       }
 

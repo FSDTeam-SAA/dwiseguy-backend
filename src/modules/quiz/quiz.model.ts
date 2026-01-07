@@ -50,12 +50,12 @@ const quizSchema = new Schema<IQuiz>(
             },
             lessonId: {
                   type: Schema.Types.ObjectId,
-                  ref: 'Lesson',
+                  ref: 'Instrument',
                   required: true,
             }, // TODO: Uncomment when Lesson model is ready
             classId: {
                   type: Schema.Types.ObjectId,
-                  ref: 'Sublesson',
+                  ref: 'Lesson',
                   required: true,
             }, // TODO: Uncomment when Class model is ready
             questions: {
