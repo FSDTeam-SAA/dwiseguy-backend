@@ -1,12 +1,14 @@
-import { Types } from "mongoose";
+
+import { Types } from 'mongoose';
 
 export interface ILesson {
-  courseId: Types.ObjectId; // Critical for linking to Course
+  moduleId: Types.ObjectId; // Parent Module (formerly lessonId)
   title: string;
-  description?: string;
+  content: string;
+  media: {
+    images: { url: string; public_id: string }[];
+    audio: { url: string; public_id: string } | null;
+  };
+  isExercise: boolean; // Virtual Piano trigger
   order: number;
-  images: { url: string; public_id: string }[];
-  sublessons: Types.ObjectId[]; // Array of Sublesson IDs
-  createdAt?: Date;
-  updatedAt?: Date;
 }
