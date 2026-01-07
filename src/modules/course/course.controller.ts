@@ -6,9 +6,9 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 import AppError from '../../errors/AppError';
 import { Course } from './course.model';
 import { buildMetaPagination } from '../../utils/pagination';
-import { Sublesson } from '../sublesson/sublesson.model';
 import { Lesson } from '../lesson/lesson.model';
 import { ICourse, PopulatedCourse } from './course.interface';
+import { SubLesson } from '../sublesson/sublesson.model';
 
 // @desc    Create user
 export const createCourse = catchAsync(async (req: Request, res: Response) => {
@@ -134,7 +134,7 @@ export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
             // Delete sublessons from DB
             const sublessonIds = lesson.sublessons?.map((s) => s._id) ?? [];
             if (sublessonIds.length) {
-                  await Sublesson.deleteMany({ _id: { $in: sublessonIds } });
+                  await SubLesson.deleteMany({ _id: { $in: sublessonIds } });
             }
       }
 
