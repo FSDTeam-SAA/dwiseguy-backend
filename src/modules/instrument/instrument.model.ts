@@ -1,31 +1,32 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { ICourse } from '../course/course.interface';
+import { Iinstrument } from './instrument.interface';
 
 // Course Schema
-const courseSchema = new Schema<ICourse>(
+const courseSchema = new Schema<Iinstrument>(
       {
-            courseTitle: { type: String, required: true },
-            courseDescription: { type: String, required: true },
-            courseImage: {
+            instrumentTitle: { type: String, required: true },
+            instrumentDescription: { type: String, required: true },
+            instrumentImage: {
                   public_id: String,
                   url: String,
             },
             level: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
-            lessons: [
+            modules: [
                   {
                         type: Schema.Types.ObjectId,
                         ref: 'Lesson',
                   },
             ],
             isActive: { type: Boolean, default: true },
+            accountStatus: { type: String, enum: ['active', 'inactive', 'suspended'], default: 'active' },
       },
       { timestamps: true }
 );
 
 // pre middleware for check name is not be duplicate
 courseSchema.pre('save', async function (next) {
-      if (this.isModified('courseTitle')) {
-            const duplicate = await Course.findOne({ courseTitle: this.courseTitle });
+      if (this.isModified('instrumentTitle')) {
+            const duplicate = await Instrument.findOne({ instrumentTitle: this.instrumentTitle });
             if (duplicate) {
                   throw new Error('Course title already exists');
             }
@@ -33,6 +34,4 @@ courseSchema.pre('save', async function (next) {
       next();
 });
 
-
-
-export const Course: Model<ICourse> = mongoose.model<ICourse>('Course', courseSchema);
+export const Instrument: Model<Iinstrument> = mongoose.model<Iinstrument>('Instrument', courseSchema);
