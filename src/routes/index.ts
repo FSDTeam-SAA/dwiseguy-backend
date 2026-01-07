@@ -26,7 +26,10 @@ const moduleRoutes = [
             path: '/quiz/student',
             route: quizAttemptRoutes,
       },
-      { path: '/module', route: moduleRouter },
+      {
+            path: '/module',
+            route: moduleRouter
+      },
       {
             path: '/lesson',
             route: lessonRouter,

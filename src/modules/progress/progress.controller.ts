@@ -5,33 +5,33 @@ import { StatusCodes } from 'http-status-codes';
 import { progressService } from './progress.service';
 import AppError from '../../errors/AppError';
 
-const startCourse = catchAsync(async (req: Request, res: Response) => {
-  const { courseId, userId: bodyUserId } = req.body;
+const startInstrument = catchAsync(async (req: Request, res: Response) => {
+  const { instrumentId, userId: bodyUserId } = req.body;
   const userId = req.user?._id || bodyUserId; 
 
-  if (!courseId || !userId) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "Course ID and User ID are required.");
+  if (!instrumentId || !userId) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Instrument ID and User ID are required.");
   }
 
-  const result = await progressService.initializeProgress(userId.toString(), courseId);
+  const result = await progressService.initializeProgress(userId.toString(), instrumentId);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: "Course started successfully!",
+    message: "Instrument practice started successfully!",
     data: result,
   });
 });
 
-const getStudentCourseDetails = catchAsync(async (req: Request, res: Response) => {
-  const { courseId } = req.params;
+const getStudentInstrumentDetails = catchAsync(async (req: Request, res: Response) => {
+  const { instrumentId } = req.params;
   const userId = req.user?._id || req.query.userId;
 
   if (!userId) {
     throw new AppError(StatusCodes.BAD_REQUEST, "User ID is required.");
   }
 
-  const result = await progressService.getCourseDetailsWithProgress(userId.toString(), courseId);
+  const result = await progressService.getInstrumentDetailsWithProgress(userId.toString(), instrumentId);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -40,15 +40,15 @@ const getStudentCourseDetails = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-const completeSubLesson = catchAsync(async (req: Request, res: Response) => {
-  const { subLessonId, userId: bodyUserId } = req.body;
+const completeLesson = catchAsync(async (req: Request, res: Response) => {
+  const { lessonId, userId: bodyUserId } = req.body;
   const userId = req.user?._id || bodyUserId;
 
-  if (!subLessonId || !userId) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "Missing subLessonId or userId");
+  if (!lessonId || !userId) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Missing lessonId or userId");
   }
 
-  const result = await progressService.updateStudentProgress(userId.toString(), subLessonId);
+  const result = await progressService.updateStudentProgress(userId.toString(), lessonId);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -58,13 +58,13 @@ const completeSubLesson = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const resumeCourse = catchAsync(async (req: Request, res: Response) => {
-  const { courseId } = req.params;
+const resumeInstrument = catchAsync(async (req: Request, res: Response) => {
+  const { instrumentId } = req.params;
   const userId = req.user?._id || req.query.userId;
 
   if (!userId) throw new AppError(StatusCodes.BAD_REQUEST, "User ID is required.");
 
-  const result = await progressService.getResumePoint(userId.toString(), courseId);
+  const result = await progressService.getResumePoint(userId.toString(), instrumentId);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -72,7 +72,6 @@ const resumeCourse = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-
 
 const getLeaderboard = catchAsync(async (req: Request, res: Response) => {
   const result = await progressService.getLeaderboard();
@@ -85,14 +84,10 @@ const getLeaderboard = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Add to your exports
-
-
-
 export const progressController = {
-  startCourse,
-  getStudentCourseDetails,
-  completeSubLesson,
-  resumeCourse,
+  startInstrument,
+  getStudentInstrumentDetails,
+  completeLesson,
+  resumeInstrument,
   getLeaderboard
 };
