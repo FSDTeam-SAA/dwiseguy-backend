@@ -12,6 +12,7 @@ import { PopulatedInstrument } from './instrument.interface';
 // @desc    Create user
 export const createInstrument = catchAsync(async (req: Request, res: Response) => {
       const value = req.body;
+      
 
       const instrument = await Instrument.create(value);
       if (!instrument as any) throw new AppError(400, 'User registration failed');

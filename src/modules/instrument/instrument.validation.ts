@@ -6,9 +6,9 @@ const moduleRefSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid lesson ID
 // Create Course Schema
 export const createInstrumentSchema = z.object({
       body: z.object({
-            instrumentImage: z.string().min(2),
-            courseDescription: z.string().min(10),
-            courseImage: z.string().url().optional(),
+            instrumentTitle: z.string().min(2),
+            instrumentDescription: z.string().min(10),
+            instrumentImage: z.string().url().optional(),
             level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
             lessons: z.array(moduleRefSchema).optional(),
       }),
