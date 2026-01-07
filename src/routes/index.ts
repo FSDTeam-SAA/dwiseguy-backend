@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import userRoutes from '../modules/user/user.routes';
-import courseRoutes from '../modules/instrument/instrument.routes';
+import instrumentRoutes from '../modules/instrument/instrument.routes';
 import quizRoutes from '../modules/quiz/quiz.route';
 import quizAttemptRoutes from '../modules/quizAttempt/quizAttempt.route';
 import { progressRouter } from '../modules/progress/progress.route';
@@ -14,8 +14,8 @@ const moduleRoutes = [
             route: userRoutes,
       },
       {
-            path: '/course',
-            route: courseRoutes,
+            path: '/instrument',
+            route: instrumentRoutes,
       },
       {
             path: '/quiz',

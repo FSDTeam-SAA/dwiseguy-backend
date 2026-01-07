@@ -5,11 +5,11 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 import AppError from '../../errors/AppError';
 import { Instrument } from './instrument.model';
 import { buildMetaPagination } from '../../utils/pagination';
-import { Lesson } from '../lesson/lesson.model';
-import { SubLesson } from '../sublesson/sublesson.model';
+import { Module } from '../module/module.model';
 import { PopulatedInstrument } from './instrument.interface';
+import { Lesson } from '../lesson/lesson.model';
 
-// @desc    Create user
+// @desc    Create instrument
 export const createInstrument = catchAsync(async (req: Request, res: Response) => {
       const value = req.body;
 
@@ -38,7 +38,7 @@ export const createInstrument = catchAsync(async (req: Request, res: Response) =
       });
 });
 
-//get single course details
+//get single sublessons details
 export const getSingleInstrument = catchAsync(async (req: Request, res: Response) => {
       const id = req.params.id as string;
       const instrument = await Instrument.findById(id);
@@ -117,58 +117,57 @@ export const updateInstrument = catchAsync(async (req: Request, res: Response) =
 
 //delete course
 export const deleteInstrument = catchAsync(async (req: Request, res: Response) => {
-      const InstrumentId = req.params.id as string;
+      const instrumentId = req.params.id as string;
 
-      // Populate lessons and sublessons
-      const instrument = (await Instrument.findById(InstrumentId).populate({
-            path: 'lessons',
-            populate: { path: 'sublessons' },
+      // Populate modules → lessons
+      const instrument = (await Instrument.findByIdAndDelete(instrumentId).populate({
+            path: 'modules',
+            populate: { path: 'lessons' },
       })) as PopulatedInstrument | null;
-
       if (!instrument) throw new AppError(404, 'Instrument not found');
 
-      // Delete course image
-      if (instrument.instrumentImage?.public_id) {
-            await deleteFromCloudinary(instrument.instrumentImage.public_id, 'image');
-      }
-
-      // Loop through lessons
-      for (const lesson of instrument.lessons ?? []) {
-            // Delete lesson images
-            for (const img of lesson.images ?? []) {
-                  if (img.public_id) await deleteFromCloudinary(img.public_id, 'image');
-            }
-
-            // Delete sublesson media
-            for (const sub of lesson.sublessons ?? []) {
-                  // Images
-                  for (const img of sub.media?.images ?? []) {
-                        if (img.public_id) await deleteFromCloudinary(img.public_id, 'image');
-                  }
-
-                  // Audio
-                  if (sub.media?.audio?.public_id) {
-                        await deleteFromCloudinary(sub.media.audio.public_id, 'audio');
+      //  Loop through modules
+      for (const module of instrument.modules ?? []) {
+            // Delete module images
+            for (const img of (module as any).images ?? []) {
+                  if (img.public_id) {
+                        await deleteFromCloudinary(img.public_id, 'image');
                   }
             }
 
-            // Delete sublessons from DB
-            const sublessonIds = lesson.sublessons?.map((s) => s._id) ?? [];
-            if (sublessonIds.length) {
-                  await SubLesson.deleteMany({ _id: { $in: sublessonIds } });
+            // Loop through lessons
+            for (const lesson of (module as any).lessons ?? []) {
+                  // Delete lesson images
+                  for (const img of lesson.media?.images ?? []) {
+                        if (img.public_id) {
+                              await deleteFromCloudinary(img.public_id, 'image');
+                        }
+                  }
+
+                  // Delete lesson audio
+                  if (lesson.media?.audio?.public_id) {
+                        await deleteFromCloudinary(lesson.media.audio.public_id, 'audio');
+                  }
+            }
+
+            // Delete lessons from DB
+            const lessonIds = (module as any).lessons?.map((lesson: any) => lesson._id) ?? [];
+
+            if (lessonIds.length) {
+                  await Lesson.deleteMany({ _id: { $in: lessonIds } });
             }
       }
 
-      // Delete all lessons of the course
-      await Lesson.deleteMany({ courseId: instrument._id });
+      // Delete modules
+      await Module.deleteMany({ instrumentId: instrument._id });
 
-      // Delete the course itself
+      // Delete instrument
       await instrument.deleteOne();
 
       sendResponse(res, {
             statusCode: 200,
             success: true,
-            message: 'Instrument, lessons, sublessons, and all media deleted successfully',
+            message: 'Instrument, modules, lessons, and all media deleted successfully',
             data: instrument,
       });
 });
