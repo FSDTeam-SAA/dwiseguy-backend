@@ -186,8 +186,10 @@ import AppError from "../../errors/AppError";
 import { IModule } from "./module.interface";
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
+import { Instrument } from "../instrument/instrument.model";
+import { Lesson } from "../lesson/lesson.model";
 // import { Instrument } from "../instrument/instrument.model"; // Renamed from Course
-// import { Lesson } from "../lesson/lesson.model"; // Renamed from Sublesson
+// import { Lesson } from '../lesson/lesson.model'; // Renamed from Sublesson
 
 const createModuleIntoDb = async (payload: IModule) => {
   const session = await mongoose.startSession();

@@ -6,6 +6,7 @@ import { Lesson } from '../lesson/lesson.model';
 import { UserProgress } from './progress.model';
 import { Types } from 'mongoose';
 
+
 const initializeProgress = async (userId: string, instrumentId: string) => {
     const instObjId = new Types.ObjectId(instrumentId);
     const userObjId = new Types.ObjectId(userId);
@@ -57,7 +58,7 @@ const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: st
             ? progress?.completedModules.some(id => id.equals(previousModule._id)) 
             : false;
 
-        const isUnlocked = index === 0 || isCompleted || isCurrent || isPreviousCompleted;
+            const isUnlocked = index === 0 || isCompleted || isCurrent || isPreviousCompleted;
 
         return {
             _id: mod._id,
@@ -75,7 +76,7 @@ const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: st
     });
 
     return {
-        instrumentTitle: instrument.title,
+        instrumentTitle: instrument.instrumentTitle,
         stats: { totalLessons, completedLessons: completedCount, completionPercentage },
         isInstrumentCompleted: progress?.isInstrumentCompleted || false,
         modules: moduleData

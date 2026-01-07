@@ -2,12 +2,12 @@ import mongoose from 'mongoose';
 import { Instrument } from '../modules/instrument/instrument.model';
 import { Module } from '../modules/module/module.model';
 import { Lesson } from '../modules/lesson/lesson.model';
-import config from '../config'; // Ensure this points to your DB URI
+import config from '../config/config'; // Ensure this points to your DB URI
 
 const seedDatabase = async () => {
   try {
     // 1. Connect to Database
-    await mongoose.connect(config.database_url as string);
+    await mongoose.connect(config.database.uri as string);
     console.log("Connected to DB for seeding...");
 
     // 2. Clear Existing Data (Careful! This wipes these collections)
@@ -17,13 +17,13 @@ const seedDatabase = async () => {
     console.log("Cleared old curriculum data.");
 
     // 3. Create an Instrument
-    const instrument = await Instrument.create({
-      title: "Piano Basics",
-      description: "Learn the fundamentals of Piano",
+ const instrument = await Instrument.create({
+      instrumentTitle: "Piano Basics",        // Changed from title
+      instrumentDescription: "Fundamentals",  // Changed from description
       instructor: "Master Mozart",
-      level: "Beginner",
+      level: "beginner",                      // Try lowercase 'beginner' 
       thumbnail: "piano-thumb.jpg",
-      modules: [] // Will be updated via logic
+      modules: [] 
     });
 
     // 4. Create Modules (Formerly Lessons)

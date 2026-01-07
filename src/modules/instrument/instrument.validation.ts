@@ -1,24 +1,24 @@
 import { z } from 'zod';
 
 // For referencing lessons by ObjectId
-const lessonRefSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid lesson ID');
+const moduleRefSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid lesson ID');
 
 // Create Course Schema
-export const createCourseSchema = z.object({
+export const createInstrumentSchema = z.object({
       body: z.object({
-            courseTitle: z.string().min(2),
+            instrumentImage: z.string().min(2),
             courseDescription: z.string().min(10),
             courseImage: z.string().url().optional(),
             level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-            lessons: z.array(lessonRefSchema).optional(),
+            lessons: z.array(moduleRefSchema).optional(),
       }),
 });
 
 // Update Course Schema
-export const updateCourseSchema = z.object({
+export const updateInstrumentSchema = z.object({
       body: z
             .object({
-                  courseTitle: z.string().min(2).optional(),
+                  instrumentImage: z.string().min(2).optional(),
                   courseDescription: z.string().min(10).optional(),
                   level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
 
