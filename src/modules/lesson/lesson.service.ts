@@ -1,13 +1,23 @@
-// import mongoose from 'mongoose';
+import { Lesson } from './lesson.model';
+// import { UserProgress } from "../progress/progress.model";
+import AppError from '../../errors/AppError';
+import { ILesson } from './lesson.interface';
+import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import { Course } from '../instrument/instrument.model';
+import { SubLesson } from '../sublesson/sublesson.model';
 
-// import { Lesson } from '../module/module.model';
-// import AppError from '../../errors/AppError';
-// import { StatusCodes } from 'http-status-codes';
-// import { ISublesson } from './lesson.interface';
-// import { SubLesson } from './lesson.model';
-// import { deleteFromCloudinary } from '../../utils/cloudinary';
+// const createLessonIntoDb = async (payload: ILesson) => {
+//  if (payload.subLessons?.length) {
+//     const orders = payload.subLessons.map(sl => sl.order);
 
-
+//     if (new Set(orders).size !== orders.length) {
+//       throw new AppError(
+//         StatusCodes.BAD_REQUEST,
+//         "Duplicate subLesson order detected"
+//       );
+//     }
+//   }
 
 
 
@@ -178,188 +188,109 @@
 //   }
 // };
 
-
-// // const getSingleSubLessonFromDB = async (id: string) => {
-// //   const subLesson = await Sublesson.findById(id).populate('lessonId');
-// //   if (!subLesson) throw new Error('SubLesson not found');
-
-// //   // Find Neighbors for Navigation
-// //   const currentLesson = await Lesson.findById(subLesson.lessonId);
-  
-// //   // 1. Try to find Next SubLesson in same lesson
-// //   let nextId = await Sublesson.findOne({
-// //     lessonId: subLesson.lessonId,
-// //     order: { $gt: subLesson.order }
-// //   }).sort({ order: 1 }).select('_id');
-
-// //   // 2. If no more sublessons, try to find the first sublesson of the NEXT lesson
-// //   if (!nextId && currentLesson) {
-// //     const nextLesson = await Lesson.findOne({
-// //       courseId: currentLesson.courseId,
-// //       order: { $gt: currentLesson.order }
-// //     }).sort({ order: 1 });
-
-// //     if (nextLesson) {
-// //       nextId = await Sublesson.findOne({ lessonId: nextLesson._id })
-// //         .sort({ order: 1 }).select('_id');
-// //     }
-// //   }
-
-// //   // 3. Try to find Previous SubLesson
-// //   let prevId = await Sublesson.findOne({
-// //     lessonId: subLesson.lessonId,
-// //     order: { $lt: subLesson.order }
-// //   }).sort({ order: -1 }).select('_id');
-
-// //   if (!prevId && currentLesson) {
-// //     const prevLesson = await Lesson.findOne({
-// //       courseId: currentLesson.courseId,
-// //       order: { $lt: currentLesson.order }
-// //     }).sort({ order: -1 });
-
-// //     if (prevLesson) {
-// //       prevId = await Sublesson.findOne({ lessonId: prevLesson._id })
-// //         .sort({ order: -1 }).select('_id');
-// //     }
-// //   }
-
-// //   return {
-// //     subLesson,
-// //     navigation: {
-// //       nextId: nextId?._id || null,
-// //       prevId: prevId?._id || null
-// //     }
-// //   };
-// // };
-
-// export const subLessonService = { createSubLessonIntoDb, findSubLessonsByLessonId, 
-//  deleteSubLessonFromDB, updateSubLessonInDB, 
-//     // getSingleSubLessonFromDB
-//     };
-
-
-import mongoose from 'mongoose';
-import { Module } from '../module/module.model';
-import AppError from '../../errors/AppError';
-import { StatusCodes } from 'http-status-codes';
-import { ILesson } from './lesson.interface';
-import { Lesson } from './lesson.model';
-import { deleteFromCloudinary } from '../../utils/cloudinary';
-
 const createLessonIntoDb = async (payload: ILesson) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
+      const session = await mongoose.startSession();
+      try {
+            session.startTransaction();
 
-    // 1. Create the Lesson
-    const [newLesson] = await Lesson.create([payload], { session });
+            // 1. Auto-calculate order
+            const lastLesson = await Lesson.findOne({ courseId: payload.courseId })
+                  .sort({ order: -1 })
+                  .session(session);
 
-    // 2. Push ID into Module's lessons array (The Chain)
-    const updatedModule = await Module.findByIdAndUpdate(
-      payload.moduleId,
-      { $push: { lessons: newLesson._id } },
-      { session, new: true }
-    );
+            payload.order = lastLesson ? lastLesson.order + 1 : 1;
 
-    if (!updatedModule) {
-      throw new AppError(StatusCodes.NOT_FOUND, "Parent Module not found");
-    }
+            // IMPORTANT: Initialize empty array so Sublessons can be pushed later
+            payload.sublessons = [];
 
-    await session.commitTransaction();
-    return newLesson;
-  } catch (error: any) {
-    await session.abortTransaction();
-    throw new AppError(StatusCodes.BAD_REQUEST, error.message);
-  } finally {
-    session.endSession();
-  }
-};
+            // 2. Create Lesson
+            const newLesson = await Lesson.create([payload], { session });
 
-const findLessonsByModuleId = async (moduleId: string) => {
-  const lessons = await Lesson.find({ moduleId }).sort({ order: 1 });
-  return lessons;
-};
+            // 3. Link to Course
+            const updatedCourse = await Course.findByIdAndUpdate(
+                  payload.courseId,
+                  { $push: { lessons: newLesson[0]._id } },
+                  { session, new: true }
+            );
 
-const updateLessonInDB = async (id: string, payload: any) => {
-  const isExist = await Lesson.findById(id);
-  if (!isExist) {
-    throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found with this ID");
-  }
+            if (!updatedCourse) throw new AppError(StatusCodes.NOT_FOUND, 'Course not found');
 
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-
-    // 1. Handle Module ID "Chain" Sync (If lesson is moved to a different module)
-    if (payload.moduleId && payload.moduleId.toString() !== isExist.moduleId.toString()) {
-      await Module.findByIdAndUpdate(isExist.moduleId, { $pull: { lessons: id } }, { session });
-      await Module.findByIdAndUpdate(payload.moduleId, { $push: { lessons: id } }, { session });
-    }
-
-    // 2. Handle nested media updates
-    const { media, ...otherData } = payload;
-    const updateQuery: any = { ...otherData };
-
-    if (media?.images) updateQuery['media.images'] = media.images;
-    if (media?.audio) updateQuery['media.audio'] = media.audio;
-
-    const result = await Lesson.findByIdAndUpdate(
-      id, 
-      { $set: updateQuery }, 
-      { new: true, session, runValidators: true }
-    );
-
-    await session.commitTransaction();
-    return result;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
-};
-
-const deleteLessonFromDB = async (id: string) => {
-  const lessonData = await Lesson.findById(id);
-  if (!lessonData) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
-
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-
-    // 1. Pull the ID out of the Parent Module's array
-    await Module.findByIdAndUpdate(
-      lessonData.moduleId,
-      { $pull: { lessons: id } },
-      { session }
-    );
-
-    // 2. MEDIA CLEANUP
-    if (lessonData.media?.audio?.public_id) {
-      await deleteFromCloudinary(lessonData.media.audio.public_id, 'audio');
-    }
-    if (lessonData.media?.images && lessonData.media.images.length > 0) {
-      for (const img of lessonData.media.images) {
-        await deleteFromCloudinary(img.public_id, 'image');
+            await session.commitTransaction();
+            await session.endSession();
+            return newLesson[0];
+      } catch (error: any) {
+            await session.abortTransaction();
+            await session.endSession();
+            throw new AppError(StatusCodes.BAD_REQUEST, error.message);
       }
-    }
-
-    // 3. Delete the actual Lesson document
-    const result = await Lesson.findByIdAndDelete(id, { session });
-
-    await session.commitTransaction();
-    return result;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
 };
 
-export const lessonService = { 
-  createLessonIntoDb, 
-  findLessonsByModuleId, 
-  deleteLessonFromDB, 
-  updateLessonInDB 
+const updateLessonInDB = async (id: string, payload: Partial<ILesson>) => {
+      const isLessonExist = await Lesson.findById(id);
+      if (!isLessonExist) {
+            throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+      }
+
+      // If the courseId is being changed, we need to move the reference
+      // from the old course to the new course (Complex scenario)
+      if (payload.courseId && payload.courseId.toString() !== isLessonExist.courseId.toString()) {
+            const session = await mongoose.startSession();
+            try {
+                  session.startTransaction();
+
+                  // 1. Remove from old course
+                  await Course.findByIdAndUpdate(isLessonExist.courseId, { $pull: { lessons: id } }, { session });
+
+                  // 2. Add to new course
+                  await Course.findByIdAndUpdate(payload.courseId, { $push: { lessons: id } }, { session });
+
+                  // 3. Update Lesson
+                  const result = await Lesson.findByIdAndUpdate(id, payload, { new: true, session });
+
+                  await session.commitTransaction();
+                  return result;
+            } catch (error) {
+                  await session.abortTransaction();
+                  throw error;
+            } finally {
+                  session.endSession();
+            }
+      }
+
+      // Simple update (Title, order, etc.)
+      return await Lesson.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+};
+
+const deleteLessonFromDb = async (id: string) => {
+      const lesson = await Lesson.findById(id);
+      if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+
+      const session = await mongoose.startSession();
+      try {
+            session.startTransaction();
+
+            // 1. CHAIN SYNC: Remove from Course array
+            await Course.findByIdAndUpdate(lesson.courseId, { $pull: { lessons: id } }, { session });
+
+            // 2. CASCADING DELETE: Delete all Sublessons belonging to this Lesson
+            await SubLesson.deleteMany({ lessonId: id }, { session });
+
+            // 3. Delete Lesson document
+            const result = await Lesson.findByIdAndDelete(id, { session });
+
+            await session.commitTransaction();
+            return result;
+      } catch (error) {
+            await session.abortTransaction();
+            throw error;
+      } finally {
+            session.endSession();
+      }
+};
+
+export const lessonService = {
+      createLessonIntoDb,
+      updateLessonInDB,
+      deleteLessonFromDb,
+      // getSingleLessonFromDB
 };
