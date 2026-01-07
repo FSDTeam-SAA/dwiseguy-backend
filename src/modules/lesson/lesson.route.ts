@@ -1,74 +1,77 @@
-import express from 'express';
-import { lessonController } from './lesson.controller';
-import { upload } from '../../middlewares/multer.middleware';
-import { USER_ROLE } from '../constant/user.constant';
-import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
+// import express from 'express';
 
-const router = express.Router();
+// import { upload } from '../../middlewares/multer.middleware';
+// import { subLessonController } from './lesson.controller';
+// import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 
-// ADMIN ROUTES
-router.post(
-  '/create-lesson',
-  authGuard,   // Step 1: Check if logged in
-  isAdmin,     // Step 2: Check if admin
-  upload.fields([
-    { name: 'images', maxCount: 5 },
-    { name: 'audio', maxCount: 5 }
-  ]),
-  lessonController.createLesson
-);
+// const router = express.Router();
 
-// Admin only routes
-router.patch('/update/:id', 
-  authGuard,
-  isAdmin, 
-  lessonController.updateLesson);
-
-router.delete('/delete/:id', 
-  authGuard,
-  isAdmin, 
-  lessonController.deleteLesson);
-
-// STUDENT ROUTES
-// This will be accessible via {{baseUrl}}/api/v1/lesson/get-lesson/:id
-// router.get(
-//   '/get-lesson/:id', 
-//   // auth('user'), <--- Only students can read
-//   lessonController.getSingleLesson
-// );
-
-
-
-// -------------------------------------------- //
-// ADMIN ROUTES
-// router.post(
-//   '/create-lesson', 
-//   auth('admin'), // Secure: Only admins
-//   upload.fields([
-//     { name: 'images', maxCount: 5 },
-//     { name: 'audio', maxCount: 5 }
-//   ]),
-//   lessonController.createLesson
-// );
+// // Admin Management Routes
 
 // router.patch(
 //   '/update/:id', 
-//   auth('admin'), // Secure: Only admins
-//   lessonController.updateLesson
+//   authGuard, 
+//   isAdmin, 
+//   upload.fields([{ name: 'images', maxCount: 5 }, { name: 'audio', maxCount: 1 }]), // Add this if updating files
+//   subLessonController.updateSubLesson
 // );
 
 // router.delete(
 //   '/delete/:id', 
-//   auth('admin'), // Secure: Only admins
-//   lessonController.deleteLesson
+//   authGuard, 
+//   isAdmin, 
+//   subLessonController.deleteSubLesson
 // );
 
-// STUDENT / BOTH ROUTES
-// If you implement get-lesson, it should be:
-// router.get('/:id', auth('user', 'admin'), lessonController.getSingleLesson);
+// router.post(
+//   '/create-sublesson', authGuard, isAdmin,
+//   upload.fields([
+//     { name: 'images', maxCount: 5 },
+//     { name: 'audio', maxCount: 2 }
+//   ]),
+//   subLessonController.createSubLesson
+// );
 
-// -------------------------------------------- //
+// // router.get('/:id',  subLessonController.getSingleSubLesson);
 
-const lessonRouter = router;
-export default lessonRouter;
+// export const subLessonRouter = router;
 
+
+import express from 'express';
+import { upload } from '../../middlewares/multer.middleware';
+import { lessonController } from './lesson.controller'; // Renamed
+import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
+
+const router = express.Router();
+
+// Admin Management Routes
+router.post(
+  '/admin/create-lesson', 
+  authGuard, 
+  isAdmin,
+  upload.fields([
+    { name: 'images', maxCount: 5 },
+    { name: 'audio', maxCount: 2 }
+  ]),
+  lessonController.createLesson
+);
+
+router.patch(
+  '/admin/update/:id', 
+  authGuard, 
+  isAdmin, 
+  upload.fields([
+    { name: 'images', maxCount: 5 }, 
+    { name: 'audio', maxCount: 1 }
+  ]),
+  lessonController.updateLesson
+);
+
+router.delete(
+  '/admin/delete/:id', 
+  authGuard, 
+  isAdmin, 
+  lessonController.deleteLesson
+);
+
+export const lessonRouter = router;
