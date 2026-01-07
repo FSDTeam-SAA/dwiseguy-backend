@@ -1,33 +1,34 @@
 import express from 'express';
 import { progressController } from './progress.controller';
-import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
-// import { auth } from '../../middlewares/auth.middleware';
+import { authGuard } from '../../middlewares/auth.middleware';
 
 const router = express.Router();
 
-
+// Require login for all progress tracking
 router.use(authGuard);
-// Student clicks "Start Course"
+
+// Student clicks "Start Learning"
 router.post(
-  '/start-course',
-//   auth('student', 'admin'), 
-  progressController.startCourse
+  '/start-instrument',
+  progressController.startInstrument
 );
 
-// Student views the course curriculum (showing what is locked/unlocked)
+// Student views the instrument curriculum (with lock/unlock logic)
 router.get(
-  '/course-details/:courseId',
-//   auth('student', 'admin'),
-  progressController.getStudentCourseDetails
+  '/instrument-details/:instrumentId',
+  progressController.getStudentInstrumentDetails
 );
 
+// Get the specific lesson the user left off at
 router.get(
-  '/resume/:courseId',
-  progressController.resumeCourse
+  '/resume/:instrumentId',
+  progressController.resumeInstrument
 );
 
+// Global or instrument-specific leaderboard
 router.get('/leaderboard', progressController.getLeaderboard);
 
-router.post('/complete-step', progressController.completeSubLesson);
+// Mark a specific lesson as finished
+router.post('/complete-lesson', progressController.completeLesson);
 
 export const progressRouter = router;
