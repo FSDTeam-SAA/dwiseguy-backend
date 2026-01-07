@@ -1,9 +1,12 @@
 import express from 'express';
 import { progressController } from './progress.controller';
+import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 // import { auth } from '../../middlewares/auth.middleware';
 
 const router = express.Router();
 
+
+router.use(authGuard);
 // Student clicks "Start Course"
 router.post(
   '/start-course',
