@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { Iinstrument } from './instrument.interface';
 
-// module Schema
+// moduleSchema Schema
 const moduleSchema = new Schema<Iinstrument>(
       {
             instrumentTitle: { type: String, required: true },
@@ -28,7 +28,7 @@ moduleSchema.pre('save', async function (next) {
       if (this.isModified('instrumentTitle')) {
             const duplicate = await Instrument.findOne({ instrumentTitle: this.instrumentTitle });
             if (duplicate) {
-                  throw new Error('Instrument title already exists');
+                  throw new Error('Course title already exists');
             }
       }
       next();
