@@ -9,7 +9,7 @@ const router = express.Router();
 
 // Admin Management Routes
 router.post(
-  '/admin/create-lesson', 
+  '/create-lesson', 
   authGuard, 
   isAdmin,
   upload.fields([
@@ -20,7 +20,7 @@ router.post(
 );
 
 router.patch(
-  '/admin/update/:id', 
+  '/update/:id', 
   authGuard, 
   isAdmin, 
   upload.fields([
@@ -31,7 +31,7 @@ router.patch(
 );
 
 router.delete(
-  '/admin/delete/:id', 
+  '/delete/:id', 
   authGuard, 
   isAdmin, 
   lessonController.deleteLesson
