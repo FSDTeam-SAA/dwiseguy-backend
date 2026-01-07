@@ -1,15 +1,11 @@
 import AppError from '../../errors/AppError';
 import { Quiz } from './quiz.model';
-import { QuizAttempt } from './quizAttempt.model';
-import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
 
-/* ===============================
-   Admin Quiz Services
-================================ */
+import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
+import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
-      // TODO: Uncomment when Class model is ready
       // Check if quiz name already exists for this class
       const existingQuiz = await Quiz.findOne({
             quizName: quizData.quizName,
@@ -22,24 +18,22 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
       const quiz = await Quiz.create({
             ...quizData,
             createdBy: adminId,
-            totalMarks: 20, // Fixed 20 marks
+            totalMarks: 20,
       });
 
       return quiz;
 };
 
-// Get All Quizzes (Admin)
 export const getAllQuizzesService = async () => {
       const quizzes = await Quiz.find()
             .populate('createdBy', 'name email')
-            .populate('lessonId', 'lessonTitle') // TODO: Uncomment when Lesson model is ready
-            .populate('classId', 'className') // TODO: Uncomment when Class model is ready
+            .populate('lessonId', 'title')
+            .populate('classId', 'title')
             .sort({ createdAt: -1 });
 
       return quizzes;
 };
 
-// Get Quiz by ID (Admin) - with correct answers
 export const getQuizByIdService = async (quizId: string) => {
       const quiz = await Quiz.findById(quizId).populate('createdBy', 'name email');
       // .populate('lessonId', 'lessonTitle') // TODO: Uncomment when Lesson model is ready
@@ -55,26 +49,31 @@ export const getQuizByIdService = async (quizId: string) => {
 // Update Quiz
 export const updateQuizService = async (quizId: string, updateData: TUpdateQuiz) => {
       const quiz = await Quiz.findById(quizId);
-      if (!quiz) {
-            throw new AppError(404, 'Quiz not found');
+      if (!quiz) throw new AppError(404, 'Quiz not found');
+
+      if (updateData.quizName && updateData.quizName !== quiz.quizName) {
+            const existingQuiz = await Quiz.findOne({
+                  quizName: updateData.quizName,
+                  classId: quiz.classId,
+                  _id: { $ne: quizId },
+            });
+            if (existingQuiz) throw new AppError(400, 'Quiz name must be unique within a class');
       }
 
-      // TODO: Uncomment when Class model is ready
-      // If updating quiz name, check uniqueness within class
-      // if (updateData.quizName && updateData.quizName !== quiz.quizName) {
-      //       const existingQuiz = await Quiz.findOne({
-      //             quizName: updateData.quizName,
-      //             classId: quiz.classId,
-      //             _id: { $ne: quizId },
-      //       });
-      //       if (existingQuiz) {
-      //             throw new AppError(400, 'Quiz name must be unique within a class');
-      //       }
-      // }
+      if (updateData.quizName) quiz.quizName = updateData.quizName;
+      if (updateData.timeLimit) quiz.timeLimit = updateData.timeLimit;
 
-      Object.assign(quiz, updateData);
+      if (updateData.questions?.length) {
+            updateData.questions.forEach((updatedQuestion) => {
+                  const question = quiz.questions.find((q) => q._id!.toString() === updatedQuestion._id);
+                  if (!question) throw new AppError(404, 'Question not found');
+
+                  question.questionText = updatedQuestion.questionText;
+                  question.options = updatedQuestion.options;
+            });
+      }
+
       await quiz.save();
-
       return quiz;
 };
 

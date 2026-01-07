@@ -8,13 +8,9 @@ import {
       getStudentAllAttempts,
       checkStudentAttempt,
 } from './quizAttempt.controller';
-import { submitQuizSchema, getQuizByIdSchema } from './quiz.validation';
+import { submitQuizSchema, getQuizByIdSchema } from './quizAttempt.validation';
 
 const router = express.Router();
-
-/* ===============================
-   Student Quiz Attempt Routes
-================================ */
 
 // Get all student's quiz attempts (Student Dashboard)
 router.get('/my-attempts', authGuard, getStudentAllAttempts);

@@ -2,8 +2,7 @@ import { Router } from 'express';
 import userRoutes from '../modules/user/user.routes';
 import courseRoutes from '../modules/instrument/instrument.routes';
 import quizRoutes from '../modules/quiz/quiz.route';
-import quizAttemptRoutes from '../modules/quiz/quizAttempt.route';
-
+import quizAttemptRoutes from '../modules/quizAttempt/quizAttempt.route';
 import { progressRouter } from '../modules/progress/progress.route';
 import moduleRouter from '../modules/module/module.route';
 import { lessonRouter } from '../modules/lesson/lesson.route';
@@ -28,7 +27,7 @@ const moduleRoutes = [
       },
       {
             path: '/module',
-            route: moduleRouter
+            route: moduleRouter,
       },
       {
             path: '/lesson',

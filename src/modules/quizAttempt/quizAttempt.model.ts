@@ -4,7 +4,8 @@ import { IQuizAttempt, IStudentAnswer } from './quizAttempt.interface';
 // Student Answer Sub-Schema
 const studentAnswerSchema = new Schema<IStudentAnswer>(
       {
-            questionText: {
+            questionId: {
+                  // ✅ Changed from questionText to questionId
                   type: String,
                   required: true,
             },

@@ -1,7 +1,8 @@
 import AppError from '../../errors/AppError';
-import { Quiz } from './quiz.model';
-import { QuizAttempt } from './quizAttempt.model';
+
+import { Quiz } from '../quiz/quiz.model';
 import { TSubmitQuiz } from './quizAttempt.interface';
+import { QuizAttempt } from './quizAttempt.model';
 
 /* ===============================
    Student Quiz Attempt Services
@@ -27,6 +28,7 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
             timeLimit: quiz.timeLimit,
             totalMarks: quiz.totalMarks,
             questions: quiz.questions.map((question) => ({
+                  questionId: question._id,
                   questionText: question.questionText,
                   options: question.options.map((option) => ({
                         optionText: option.optionText,
@@ -38,6 +40,7 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       return quizForStudent;
 };
 
+// Submit Quiz and Calculate Score
 // Submit Quiz and Calculate Score
 export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
       const { quizId, answers, timeTaken } = submitData;
@@ -63,24 +66,31 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
       // Calculate score and prepare detailed results
       let score = 0;
       const detailedAnswers = answers.map((studentAnswer) => {
-            // Find the question in quiz
-            const question = quiz.questions.find((q) => q.questionText === studentAnswer.questionText);
+            // ✅ Find the question by _id instead of questionText
+            const question = quiz.questions.find((q) => q._id.toString() === studentAnswer.questionId);
             if (!question) {
-                  throw new AppError(400, `Invalid question: ${studentAnswer.questionText}`);
+                  throw new AppError(400, `Invalid question ID: ${studentAnswer.questionId}`);
             }
 
+            // Find the correct option from options array
+            const correctOption = question.options.find((opt) => opt.isCorrect);
+            if (!correctOption) {
+                  throw new AppError(500, 'Quiz data is corrupted. No correct option found.');
+            }
+
+            // Check if student's answer matches the correct option text
             const isCorrect =
-                  studentAnswer.selectedOption.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+                  studentAnswer.selectedOption.trim().toLowerCase() === correctOption.optionText.trim().toLowerCase();
 
             if (isCorrect) {
                   score++;
             }
 
             return {
-                  questionText: studentAnswer.questionText,
+                  questionId: studentAnswer.questionId, // ✅ Store questionId instead of questionText
                   selectedOption: studentAnswer.selectedOption,
                   isCorrect,
-                  correctOption: question.correctAnswer,
+                  correctOption: correctOption.optionText,
             };
       });
 
@@ -130,6 +140,8 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
             detailedResults: attempt.answers,
       };
 };
+
+// Rest of the code remains same...
 
 // Get All Student's Quiz Attempts (Student Dashboard)
 export const getStudentAllAttemptsService = async (studentId: string) => {
