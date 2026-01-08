@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 
 const userSchema: Schema = new Schema<IUser>(
       {
-            name: { type: String, required: true },
+            name: { type: String, required: false, trim: true },
             email: { type: String, required: true, lowercase: true, unique: true },
             password: { type: String, select: 0, required: true },
             username: { type: String, required: true, unique: true },
@@ -53,8 +53,6 @@ userSchema.statics.isUserExistsByEmail = async function (email: string) {
       return await this.findOne({ email }).select('+password +secureFolderPin');
 };
 
-
-
 userSchema.statics.isOTPVerified = async function (id: string) {
       const user = await this.findById(id).select('+verificationInfo');
       return user?.verificationInfo?.verified;
@@ -63,8 +61,6 @@ userSchema.statics.isOTPVerified = async function (id: string) {
 userSchema.statics.isPasswordMatched = async function (plainTextPassword: string, hashPassword: string) {
       return await bcrypt.compare(plainTextPassword, hashPassword);
 };
-
-
 
 userSchema.statics.generateAccessToken = function (user: IUser) {
       const payload = { _id: user._id.toString(), email: user.email };
