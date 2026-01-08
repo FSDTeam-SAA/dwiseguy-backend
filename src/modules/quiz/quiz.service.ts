@@ -4,6 +4,7 @@ import { Quiz } from './quiz.model';
 import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
 import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 import { Types } from 'mongoose';
+import { Lesson } from '../lesson/lesson.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
@@ -23,6 +24,19 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
             totalMarks: 20,
       });
 
+      if (!quiz) throw new AppError(500, 'Failed to create quiz');
+      console.log(quiz);
+
+      const updatedLesson = await Lesson.findOneAndUpdate(
+            { _id: quizData.lessonId },
+            { $set: { quizId: quiz._id } },
+            { new: true }
+      );
+
+      if (!updatedLesson) {
+            await Quiz.findByIdAndDelete(quiz._id);
+            throw new AppError(500, 'Quiz created failed. Try again.');
+      }
       return quiz;
 };
 
@@ -86,14 +100,19 @@ export const deleteQuizService = async (quizId: string) => {
             throw new AppError(404, 'Quiz not found');
       }
 
-      // Check if any students have attempted this quiz
-      const attemptCount = await QuizAttempt.countDocuments({ quizId });
-      if (attemptCount > 0) {
-            throw new AppError(400, `Cannot delete quiz. ${attemptCount} student(s) have already attempted it.`);
+      // Delete quizId from Lesson
+      const updatedLesson = await Lesson.findOneAndUpdate(
+            { _id: quiz.lessonId },
+            { $set: { quizId: null } },
+            { new: true }
+      );
+      if (!updatedLesson) {
+            throw new AppError(500, 'Quiz delete failed. Try again.');
       }
 
-      await Quiz.findByIdAndDelete(quizId);
-      return { message: 'Quiz deleted successfully' };
+      const deleteQuiz = await Quiz.findByIdAndDelete(quizId);
+      if (!deleteQuiz) throw new AppError(500, 'Quiz delete failed. Try again.');
+      return { message: `${quiz.quizName} deleted successfully`, data: quiz.quizName };
 };
 
 // Get Quiz Analytics (Admin)
