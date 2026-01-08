@@ -14,7 +14,7 @@ export const createInstrument = catchAsync(async (req: Request, res: Response) =
       const value = req.body;
 
       const instrument = await Instrument.create(value);
-      if (!instrument as any) throw new AppError(400, 'User registration failed');
+      if (!instrument as any) throw new AppError(400, 'Instrument not created');
 
       const image = req.file;
 
@@ -41,7 +41,11 @@ export const createInstrument = catchAsync(async (req: Request, res: Response) =
 //get single sublessons details
 export const getSingleInstrument = catchAsync(async (req: Request, res: Response) => {
       const id = req.params.id as string;
-      const instrument = await Instrument.findById(id);
+      const instrument = await Instrument.findById(id).populate({
+            path: 'modules',
+            select: 'title images lessons',
+            populate: { path: 'lessons', select: 'title media' },
+      });
       if (!instrument) throw new AppError(404, 'Instrument not found');
       sendResponse(res, {
             statusCode: 200,
@@ -86,6 +90,7 @@ export const updateInstrument = catchAsync(async (req: Request, res: Response) =
       const image = req.file as Express.Multer.File;
 
       const instrument = await Instrument.findByIdAndUpdate(id, value, { new: true });
+      if (!instrument) throw new AppError(404, 'Instrument not found');
       if (image) {
             console.log((instrument as any).instrumentImage);
 
@@ -95,6 +100,8 @@ export const updateInstrument = catchAsync(async (req: Request, res: Response) =
                   'public_id' in instrument.instrumentImage
             ) {
                   //delete previous image from cloudinary
+                  console.log(instrument.instrumentImage);
+
                   await deleteFromCloudinary((instrument.instrumentImage as any).public_id as string, 'image');
             }
             const result = await uploadToCloudinary(image.path, 'image');
@@ -106,7 +113,8 @@ export const updateInstrument = catchAsync(async (req: Request, res: Response) =
             }
       }
 
-      if (!instrument) throw new AppError(404, 'Instrument not found');
+      await instrument?.save();
+
       sendResponse(res, {
             statusCode: 200,
             success: true,
@@ -125,6 +133,9 @@ export const deleteInstrument = catchAsync(async (req: Request, res: Response) =
             populate: { path: 'lessons' },
       })) as PopulatedInstrument | null;
       if (!instrument) throw new AppError(404, 'Instrument not found');
+      if (instrument.instrumentImage?.public_id) {
+            await deleteFromCloudinary(instrument.instrumentImage.public_id, 'image');
+      }
 
       //  Loop through modules
       for (const module of instrument.modules ?? []) {
