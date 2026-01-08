@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import AppError from '../../errors/AppError';
 
 import { Quiz } from '../quiz/quiz.model';
@@ -141,35 +142,79 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
       };
 };
 
-// Rest of the code remains same...
-
-// Get All Student's Quiz Attempts (Student Dashboard)
 export const getStudentAllAttemptsService = async (studentId: string) => {
-      const attempts = await QuizAttempt.find({ studentId })
-            .populate('quizId', 'quizName timeLimit totalMarks')
-            .sort({ submittedAt: -1 });
+      const result = await QuizAttempt.aggregate([
+            //Match student
+            {
+                  $match: {
+                        studentId: new Types.ObjectId(studentId),
+                  },
+            },
 
-      const totalQuizzes = attempts.length;
-      const totalScore = attempts.reduce((sum, attempt) => sum + attempt.score, 0);
-      const averagePercentage =
-            totalQuizzes > 0 ? attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalQuizzes : 0;
+            // Sort by latest attempt
+            {
+                  $sort: { submittedAt: -1 },
+            },
 
-      return {
-            totalQuizzesAttempted: totalQuizzes,
-            totalScore,
-            averagePercentage: parseFloat(averagePercentage.toFixed(2)),
-            attempts: attempts.map((attempt) => ({
-                  quizId: attempt.quizId._id,
-                  quizName: (attempt.quizId as any).quizName,
-                  score: attempt.score,
-                  totalMarks: attempt.totalMarks,
-                  percentage: attempt.percentage,
-                  submittedAt: attempt.submittedAt,
-            })),
-      };
+            // 3Join with Quiz collection
+            {
+                  $lookup: {
+                        from: 'quizzes', // 👈 collection name (important!)
+                        localField: 'quizId',
+                        foreignField: '_id',
+                        as: 'quiz',
+                  },
+            },
+
+            // 4Unwind quiz array
+            {
+                  $unwind: '$quiz',
+            },
+
+            // 5Group for summary + keep attempts
+            {
+                  $group: {
+                        _id: null,
+                        totalQuizzesAttempted: { $sum: 1 },
+                        totalScore: { $sum: '$score' },
+                        averagePercentage: { $avg: '$percentage' },
+                        attempts: {
+                              $push: {
+                                    quizId: '$quiz._id',
+                                    quizName: '$quiz.quizName',
+                                    score: '$score',
+                                    totalMarks: '$totalMarks',
+                                    percentage: '$percentage',
+                                    submittedAt: '$submittedAt',
+                              },
+                        },
+                  },
+            },
+
+            // 6Shape final response
+            {
+                  $project: {
+                        _id: 0,
+                        totalQuizzesAttempted: 1,
+                        totalScore: 1,
+                        averagePercentage: {
+                              $round: ['$averagePercentage', 2],
+                        },
+                        attempts: 1,
+                  },
+            },
+      ]);
+      console.log(result);
+      return (
+            result[0] || {
+                  totalQuizzesAttempted: 0,
+                  totalScore: 0,
+                  averagePercentage: 0,
+                  attempts: [],
+            }
+      );
 };
 
-// Check if student has attempted a quiz
 export const hasStudentAttemptedQuizService = async (quizId: string, studentId: string) => {
       const attempt = await QuizAttempt.findOne({ quizId, studentId });
       return !!attempt;

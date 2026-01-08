@@ -32,8 +32,8 @@ const questionSchema = z.object({
 export const createQuizSchema = z.object({
       body: z.object({
             quizName: z.string().min(3, 'Quiz name must be at least 3 characters').trim(),
-            lessonId: z.string().min(1, 'Lesson ID is required'), 
-            classId: z.string().min(1, 'Class ID is required'), 
+            moduleId: z.string().min(1, 'Lesson ID is required'),
+            lessonId: z.string().min(1, 'Class ID is required'),
             questions: z
                   .array(questionSchema)
                   .length(20, 'Quiz must have exactly 20 questions')

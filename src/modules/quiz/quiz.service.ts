@@ -3,16 +3,18 @@ import { Quiz } from './quiz.model';
 
 import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
 import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
+import { Types } from 'mongoose';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
       // Check if quiz name already exists for this class
       const existingQuiz = await Quiz.findOne({
             quizName: quizData.quizName,
-            classId: quizData.classId,
+            lessonId: quizData.lessonId,
       });
+      console.log(existingQuiz);
       if (existingQuiz) {
-            throw new AppError(400, 'Quiz name must be unique within a class');
+            throw new AppError(400, 'Quiz name must be unique within a lesson');
       }
 
       const quiz = await Quiz.create({
@@ -27,8 +29,8 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
 export const getAllQuizzesService = async () => {
       const quizzes = await Quiz.find()
             .populate('createdBy', 'name email')
+            .populate('moduleId', 'title')
             .populate('lessonId', 'title')
-            .populate('classId', 'title')
             .sort({ createdAt: -1 });
 
       return quizzes;
@@ -54,10 +56,10 @@ export const updateQuizService = async (quizId: string, updateData: TUpdateQuiz)
       if (updateData.quizName && updateData.quizName !== quiz.quizName) {
             const existingQuiz = await Quiz.findOne({
                   quizName: updateData.quizName,
-                  classId: quiz.classId,
+                  classId: quiz.lessonId,
                   _id: { $ne: quizId },
             });
-            if (existingQuiz) throw new AppError(400, 'Quiz name must be unique within a class');
+            if (existingQuiz) throw new AppError(400, 'Quiz name must be unique within a lesson');
       }
 
       if (updateData.quizName) quiz.quizName = updateData.quizName;
@@ -96,42 +98,85 @@ export const deleteQuizService = async (quizId: string) => {
 
 // Get Quiz Analytics (Admin)
 export const getQuizAnalyticsService = async (quizId: string) => {
-      const quiz = await Quiz.findById(quizId);
+      const quiz = await Quiz.findById(quizId).select('quizName');
       if (!quiz) {
             throw new AppError(404, 'Quiz not found');
       }
 
-      const attempts = await QuizAttempt.find({ quizId }).populate('studentId', 'name email');
+      const quizObjectId = new Types.ObjectId(quizId);
 
-      const totalAttempts = attempts.length;
-      const averageScore =
-            totalAttempts > 0 ? attempts.reduce((sum, attempt) => sum + attempt.score, 0) / totalAttempts : 0;
-      const averagePercentage =
-            totalAttempts > 0 ? attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalAttempts : 0;
-      const highestScore = totalAttempts > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
-      const lowestScore = totalAttempts > 0 ? Math.min(...attempts.map((a) => a.score)) : 0;
+      const analytics = await QuizAttempt.aggregate([
+            {
+                  $match: {
+                        quizId: quizObjectId,
+                  },
+            },
+            {
+                  $facet: {
+                        // -----------------------------
+                        // Overall statistics
+                        // -----------------------------
+                        stats: [
+                              {
+                                    $group: {
+                                          _id: null,
+                                          totalAttempts: { $sum: 1 },
+                                          averageScore: { $avg: '$score' },
+                                          averagePercentage: { $avg: '$percentage' },
+                                          highestScore: { $max: '$score' },
+                                          lowestScore: { $min: '$score' },
+                                    },
+                              },
+                        ],
 
-      // TODO: Calculate completion rate when you have total enrolled students
-      // const completionRate = (totalAttempts / totalEnrolledStudents) * 100;
+                        // -----------------------------
+                        // Recent attempts
+                        // -----------------------------
+                        recentAttempts: [
+                              { $sort: { submittedAt: -1 } },
+                              { $limit: 10 },
+                              {
+                                    $lookup: {
+                                          from: 'users', // 👈 collection name
+                                          localField: 'studentId',
+                                          foreignField: '_id',
+                                          as: 'student',
+                                    },
+                              },
+                              { $unwind: '$student' },
+                              {
+                                    $project: {
+                                          _id: 0,
+                                          score: 1,
+                                          percentage: 1,
+                                          submittedAt: 1,
+                                          studentName: '$student.name',
+                                          studentEmail: '$student.email',
+                                    },
+                              },
+                        ],
+                  },
+            },
+            {
+                  $project: {
+                        stats: { $arrayElemAt: ['$stats', 0] },
+                        recentAttempts: 1,
+                  },
+            },
+      ]);
+
+      const stats = analytics[0]?.stats;
 
       return {
             quizName: quiz.quizName,
-            totalAttempts,
-            averageScore: parseFloat(averageScore.toFixed(2)),
-            averagePercentage: parseFloat(averagePercentage.toFixed(2)),
-            highestScore,
-            lowestScore,
-            // completionRate, // TODO: Add when you have enrollment data
-            recentAttempts: attempts.slice(0, 10).map((attempt) => ({
-                  studentName: (attempt.studentId as any).name,
-                  studentEmail: (attempt.studentId as any).email,
-                  score: attempt.score,
-                  percentage: attempt.percentage,
-                  submittedAt: attempt.submittedAt,
-            })),
+            totalAttempts: stats?.totalAttempts || 0,
+            averageScore: stats?.averageScore ? Number(stats.averageScore.toFixed(2)) : 0,
+            averagePercentage: stats?.averagePercentage ? Number(stats.averagePercentage.toFixed(2)) : 0,
+            highestScore: stats?.highestScore || 0,
+            lowestScore: stats?.lowestScore || 0,
+            recentAttempts: analytics[0]?.recentAttempts || [],
       };
 };
-
 // Get Leaderboard (Admin View)
 export const getLeaderboardService = async () => {
       const leaderboard = await QuizAttempt.aggregate([
@@ -178,8 +223,3 @@ export const getLeaderboardService = async () => {
 
       return leaderboardWithRank;
 };
-
-// TODO: Add these when Lesson/Class models are ready
-// - getQuizzesByLessonId
-// - getQuizzesByClassId
-// - getQuizzesByCourseId
