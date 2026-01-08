@@ -5,6 +5,7 @@ import { uploadToCloudinary } from "../../utils/cloudinary";
 import { Request, Response } from "express";
 import sendResponse from "../../utils/sendResponse";
 import { lessonService } from "./lesson.service";
+import { progressService } from "../progress/progress.service";
 
 
 const createLesson = catchAsync(async (req: Request, res: Response) => {
@@ -94,8 +95,64 @@ const deleteLesson = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// User cONTROL
+
+const getLessonByModule = catchAsync(async(req: Request, res: Response) => {
+  const { moduleId } = req.params;
+
+  const lessons = await lessonService.getLessonByModuleIdFromDb(moduleId);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Lessons fetched successfully',
+    data: lessons,
+  });
+})
+
+// const getSingleLesson = catchAsync(async (req: Request, res: Response) => {
+//   const { lessonId } = req.params;
+//   const userId = req.user?._id;
+
+//   // 1. Get the lesson
+//   const lesson = await lessonService.getSingleLessonFromDb(lessonId);
+//   if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+
+//   // 2. Check if the user is allowed to see this lesson (Progress check)
+//   const isUnlocked = await progressService.checkIfLessonIsUnlocked(userId, lessonId);
+  
+//   if (!isUnlocked) {
+//     throw new AppError(StatusCodes.FORBIDDEN, 'This lesson is locked. Complete previous tasks first.');
+//   }
+
+//   sendResponse(res, {
+//     statusCode: StatusCodes.OK,
+//     success: true,
+//     message: 'Lesson fetched successfully',
+//     data: lesson,
+//   });
+// });
+
+const completeLesson = catchAsync(async (req: Request, res: Response) => {
+  const { lessonId } = req.params;
+  const userId = req.user?._id;
+
+  // This calls the progress service we built earlier
+  const result = await progressService.updateStudentProgress(userId.toString(), lessonId);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Lesson marked as completed!',
+    data: result,
+  });
+});
+
 export const lessonController = {
   createLesson,
   deleteLesson,
-  updateLesson
+  updateLesson,
+  getLessonByModule,
+  // getSingleLesson,
+  completeLesson
 };
