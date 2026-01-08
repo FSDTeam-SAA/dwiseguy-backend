@@ -34,7 +34,7 @@ const moduleRoutes = [
             route: lessonRouter,
       },
       {
-            path: '/user/progress',
+            path: '/progress',
             route: progressRouter,
       },
 ];
