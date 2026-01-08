@@ -61,6 +61,7 @@ export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
 
 export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
       const { id } = req.params;
+      console.log(req.params);
 
       const result = await quizService.deleteQuizService(id);
 

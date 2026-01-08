@@ -1,10 +1,5 @@
 import { z } from 'zod';
 
-const optionSchema = z.object({
-      optionText: z.string().min(1, 'Option text is required'),
-      isCorrect: z.boolean(),
-});
-
 export const submitQuizSchema = z.object({
       body: z.object({
             quizId: z.string().min(1, 'Quiz ID is required'),
