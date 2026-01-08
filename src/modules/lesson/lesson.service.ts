@@ -117,9 +117,26 @@ const deleteLessonFromDB = async (id: string) => {
   }
 };
 
+// User Control
+
+const getLessonByModuleIdFromDb = async(moduleId: string) => {
+  const lessons = await findLessonsByModuleId(moduleId);
+  return lessons;
+}
+
+
+
+const getSingleLessonFromDb = async (lessonId: string) => {
+  // Populate the quizId so the frontend knows where to redirect the user
+  const result = await Lesson.findById(lessonId).populate('quizId', 'quizName totalMarks');
+  return result;
+};
+
 export const lessonService = { 
   createLessonIntoDb, 
   findLessonsByModuleId, 
   deleteLessonFromDB, 
-  updateLessonInDB 
+  updateLessonInDB ,
+  getLessonByModuleIdFromDb,
+  getSingleLessonFromDb
 };

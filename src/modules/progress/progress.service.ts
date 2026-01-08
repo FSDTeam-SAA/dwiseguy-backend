@@ -185,10 +185,37 @@ const getLeaderboard = async () => {
   ]);
 };
 
+// const checkIfLessonIsUnlocked = async (userId: string | Types.ObjectId, lessonId: string) => {
+//     const lessonObjId = new Types.ObjectId(lessonId);
+    
+//     const lesson = await Lesson.findById(lessonObjId);
+//     if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
+
+//     const currentModule = await Module.findById(lesson.moduleId);
+//     if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
+
+//     const progress = await UserProgress.findOne({ 
+//         userId: new Types.ObjectId(userId), 
+//         instrumentId: currentModule.instrumentId 
+//     });
+
+//     if (!progress) return false;
+
+//     const isCompleted = progress.completedLessons.some(id => id.equals(lessonObjId));
+//     const isCurrent = progress.currentLessonId?.equals(lessonObjId);
+    
+//     // First lesson of the first module is always open
+//     const isFirstLessonOverall = lesson.order === 1 && currentModule.order === 1;
+
+//     return isCompleted || isCurrent || isFirstLessonOverall;
+// };
+
+
 export const progressService = {
     initializeProgress,
     getInstrumentDetailsWithProgress,
     updateStudentProgress,
     getResumePoint,
-    getLeaderboard
+    getLeaderboard,
+    // checkIfLessonIsUnlocked
 };
