@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { Iinstrument } from './instrument.interface';
 
-// Course Schema
-const courseSchema = new Schema<Iinstrument>(
+// moduleSchema Schema
+const moduleSchema = new Schema<Iinstrument>(
       {
             instrumentTitle: { type: String, required: true },
             instrumentDescription: { type: String, required: true },
@@ -14,7 +14,7 @@ const courseSchema = new Schema<Iinstrument>(
             modules: [
                   {
                         type: Schema.Types.ObjectId,
-                        ref: 'Lesson',
+                        ref: 'Module',
                   },
             ],
             isActive: { type: Boolean, default: true },
@@ -24,7 +24,7 @@ const courseSchema = new Schema<Iinstrument>(
 );
 
 // pre middleware for check name is not be duplicate
-courseSchema.pre('save', async function (next) {
+moduleSchema.pre('save', async function (next) {
       if (this.isModified('instrumentTitle')) {
             const duplicate = await Instrument.findOne({ instrumentTitle: this.instrumentTitle });
             if (duplicate) {
@@ -34,4 +34,4 @@ courseSchema.pre('save', async function (next) {
       next();
 });
 
-export const Instrument: Model<Iinstrument> = mongoose.model<Iinstrument>('Instrument', courseSchema);
+export const Instrument: Model<Iinstrument> = mongoose.model<Iinstrument>('Instrument', moduleSchema);

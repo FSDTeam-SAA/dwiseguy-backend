@@ -7,7 +7,7 @@ const router = express.Router();
 
 // ADMIN ROUTES: Create Module
 router.post(
-  '/admin/create-module',
+  '/create-module',
   authGuard,
   isAdmin,
   upload.fields([
@@ -18,18 +18,33 @@ router.post(
 
 // ADMIN ROUTES: Update/Delete Module
 router.patch(
-  '/admin/update/:id', 
+  '/update/:id', 
   authGuard,
   isAdmin, 
   moduleController.updateModule
 );
 
 router.delete(
-  '/admin/delete/:id', 
+  '/delete/:id', 
   authGuard,
   isAdmin, 
   moduleController.deleteModule
 );
+
+// User Control
+
+router.get(
+  '/get-modules/:instrumentId',
+  authGuard,
+  moduleController.getModulesByInstrument
+)
+
+router.get(
+  '/get-single-module/:moduleId', 
+  authGuard, 
+  moduleController.getSingleModule
+);
+
 
 const moduleRouter = router;
 export default moduleRouter;

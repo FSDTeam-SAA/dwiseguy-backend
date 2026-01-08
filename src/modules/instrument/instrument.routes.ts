@@ -15,7 +15,7 @@ import { createInstrumentSchema, updateInstrumentSchema } from './instrument.val
 const router = express.Router();
 
 router.post(
-      '/create-course',
+      '/create-instrument',
       authGuard,
       isAdmin,
       upload.single('image'),
@@ -23,15 +23,15 @@ router.post(
       createInstrument
 );
 
-router.get('/get-single-course/:id', getSingleInstrument);
-router.get('/get-all-courses', getSingleInstrument);
+router.get('/get-single-instrument/:id', getSingleInstrument);
+router.get('/get-all-instruments', getAllInstruments);
 router.patch(
-      '/update-course/:id',
+      '/update-instrument/:id',
       authGuard,
       isAdmin,
       upload.single('image'),
       validateRequest(updateInstrumentSchema),
       updateInstrument
 );
-router.delete('/delete-course/:id', authGuard, isAdmin, deleteInstrument);
+router.delete('/delete-instrument/:id', authGuard, isAdmin, deleteInstrument);
 export default router;
