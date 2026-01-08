@@ -4,6 +4,7 @@ import AppError from '../../errors/AppError';
 import { Quiz } from '../quiz/quiz.model';
 import { TSubmitQuiz } from './quizAttempt.interface';
 import { QuizAttempt } from './quizAttempt.model';
+import { progressService } from '../progress/progress.service';
 
 /* ===============================
    Student Quiz Attempt Services
@@ -43,43 +44,113 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
 
 // Submit Quiz and Calculate Score
 // Submit Quiz and Calculate Score
+// export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
+//       const { quizId, answers, timeTaken } = submitData;
+
+//       // Validate quiz exists
+//       const quiz = await Quiz.findById(quizId);
+//       if (!quiz) {
+//             throw new AppError(404, 'Quiz not found');
+//       }
+
+//       // Check if student has already attempted
+//       const existingAttempt = await QuizAttempt.findOne({ quizId, studentId });
+//       if (existingAttempt) {
+//             throw new AppError(400, 'You have already attempted this quiz. Only one attempt is allowed.');
+//       }
+
+//       // Validate time limit (20 minutes = 1200 seconds)
+//       const maxTimeInSeconds = quiz.timeLimit * 60;
+//       if (timeTaken > maxTimeInSeconds) {
+//             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
+//       }
+
+//       // Calculate score and prepare detailed results
+//       let score = 0;
+//       const detailedAnswers = answers.map((studentAnswer) => {
+//             // ✅ Find the question by _id instead of questionText
+//             const question = quiz.questions.find((q) => q._id.toString() === studentAnswer.questionId);
+//             if (!question) {
+//                   throw new AppError(400, `Invalid question ID: ${studentAnswer.questionId}`);
+//             }
+
+//             // Find the correct option from options array
+//             const correctOption = question.options.find((opt) => opt.isCorrect);
+//             if (!correctOption) {
+//                   throw new AppError(500, 'Quiz data is corrupted. No correct option found.');
+//             }
+
+//             // Check if student's answer matches the correct option text
+//             const isCorrect =
+//                   studentAnswer.selectedOption.trim().toLowerCase() === correctOption.optionText.trim().toLowerCase();
+
+//             if (isCorrect) {
+//                   score++;
+//             }
+
+//             return {
+//                   questionId: studentAnswer.questionId, // ✅ Store questionId instead of questionText
+//                   selectedOption: studentAnswer.selectedOption,
+//                   isCorrect,
+//                   correctOption: correctOption.optionText,
+//             };
+//       });
+
+//       // Calculate percentage
+//       const percentage = (score / quiz.totalMarks) * 100;
+
+//       // Save quiz attempt
+//       const quizAttempt = await QuizAttempt.create({
+//             quizId,
+//             studentId,
+//             answers: detailedAnswers,
+//             score,
+//             totalMarks: quiz.totalMarks,
+//             percentage: parseFloat(percentage.toFixed(2)),
+//             timeTaken,
+//             submittedAt: new Date(),
+//       });
+
+//       return {
+//             attemptId: quizAttempt._id,
+//             score,
+//             totalMarks: quiz.totalMarks,
+//             percentage: parseFloat(percentage.toFixed(2)),
+//             timeTaken,
+//             detailedResults: detailedAnswers, // Show correct/wrong answers
+//       };
+// };
+
 export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
       const { quizId, answers, timeTaken } = submitData;
 
-      // Validate quiz exists
       const quiz = await Quiz.findById(quizId);
       if (!quiz) {
             throw new AppError(404, 'Quiz not found');
       }
 
-      // Check if student has already attempted
       const existingAttempt = await QuizAttempt.findOne({ quizId, studentId });
       if (existingAttempt) {
             throw new AppError(400, 'You have already attempted this quiz. Only one attempt is allowed.');
       }
 
-      // Validate time limit (20 minutes = 1200 seconds)
       const maxTimeInSeconds = quiz.timeLimit * 60;
       if (timeTaken > maxTimeInSeconds) {
             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
       }
 
-      // Calculate score and prepare detailed results
       let score = 0;
       const detailedAnswers = answers.map((studentAnswer) => {
-            // ✅ Find the question by _id instead of questionText
             const question = quiz.questions.find((q) => q._id.toString() === studentAnswer.questionId);
             if (!question) {
                   throw new AppError(400, `Invalid question ID: ${studentAnswer.questionId}`);
             }
 
-            // Find the correct option from options array
             const correctOption = question.options.find((opt) => opt.isCorrect);
             if (!correctOption) {
                   throw new AppError(500, 'Quiz data is corrupted. No correct option found.');
             }
 
-            // Check if student's answer matches the correct option text
             const isCorrect =
                   studentAnswer.selectedOption.trim().toLowerCase() === correctOption.optionText.trim().toLowerCase();
 
@@ -88,14 +159,13 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             }
 
             return {
-                  questionId: studentAnswer.questionId, // ✅ Store questionId instead of questionText
+                  questionId: studentAnswer.questionId,
                   selectedOption: studentAnswer.selectedOption,
                   isCorrect,
                   correctOption: correctOption.optionText,
             };
       });
 
-      // Calculate percentage
       const percentage = (score / quiz.totalMarks) * 100;
 
       // Save quiz attempt
@@ -110,13 +180,17 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             submittedAt: new Date(),
       });
 
+      // 2. TRIGGER PROGRESS UPDATE
+      //  pass the studentId and the lessonId that belongs to this quiz
+      await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
+
       return {
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
             timeTaken,
-            detailedResults: detailedAnswers, // Show correct/wrong answers
+            detailedResults: detailedAnswers,
       };
 };
 

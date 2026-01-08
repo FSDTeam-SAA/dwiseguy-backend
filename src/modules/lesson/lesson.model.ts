@@ -20,7 +20,13 @@ const lessonSchema = new Schema<ILesson>({
   },
   isExercise: { type: Boolean, default: false },
   order: { type: Number, required: true },
-  quizId: { type: Schema.Types.ObjectId, ref: 'Quiz', default: null },
+quizIds: [
+  {
+    type: Schema.Types.ObjectId,
+    ref: "Quiz"
+  }
+]
+
 }, { timestamps: true });
 
 export const Lesson = model<ILesson>('Lesson', lessonSchema);
