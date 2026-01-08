@@ -206,7 +206,7 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
       }
 
       return {
-            quizName: (attempt.quizId as any).quizName,
+            quizName: (attempt?.quizId as any)?.quizName,
             score: attempt.score,
             totalMarks: attempt.totalMarks,
             percentage: attempt.percentage,
