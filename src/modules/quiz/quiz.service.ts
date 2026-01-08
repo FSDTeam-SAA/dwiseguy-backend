@@ -9,7 +9,7 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
       // Check if quiz name already exists for this class
       const existingQuiz = await Quiz.findOne({
             quizName: quizData.quizName,
-            classId: quizData.classId,
+            lessonId: quizData.lessonId,
       });
       if (existingQuiz) {
             throw new AppError(400, 'Quiz name must be unique within a class');
@@ -27,8 +27,8 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
 export const getAllQuizzesService = async () => {
       const quizzes = await Quiz.find()
             .populate('createdBy', 'name email')
+            .populate('moduleId', 'title')
             .populate('lessonId', 'title')
-            .populate('classId', 'title')
             .sort({ createdAt: -1 });
 
       return quizzes;
@@ -54,7 +54,7 @@ export const updateQuizService = async (quizId: string, updateData: TUpdateQuiz)
       if (updateData.quizName && updateData.quizName !== quiz.quizName) {
             const existingQuiz = await Quiz.findOne({
                   quizName: updateData.quizName,
-                  classId: quiz.classId,
+                  classId: quiz.lessonId,
                   _id: { $ne: quizId },
             });
             if (existingQuiz) throw new AppError(400, 'Quiz name must be unique within a class');
