@@ -17,8 +17,8 @@ export interface IQuestion {
 export interface IQuiz extends Document {
       _id: string;
       quizName: string;
+      moduleId: Types.ObjectId;
       lessonId: Types.ObjectId;
-      classId: Types.ObjectId;
       questions: IQuestion[];
       timeLimit: number;
       totalMarks: number;
@@ -30,8 +30,7 @@ export interface IQuiz extends Document {
 // Create Quiz Type
 export type TCreateQuiz = {
       quizName: string;
-      lessonId: string;
-      classId: string;
+      moduleId: string;
       questions: IQuestion[];
       timeLimit?: number;
 };

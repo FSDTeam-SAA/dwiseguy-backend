@@ -1,12 +1,10 @@
+import { Types } from 'mongoose';
 import AppError from '../../errors/AppError';
-
 import { Quiz } from '../quiz/quiz.model';
 import { TSubmitQuiz } from './quizAttempt.interface';
 import { QuizAttempt } from './quizAttempt.model';
+import { progressService } from '../progress/progress.service';
 
-/* ===============================
-   Student Quiz Attempt Services
-================================ */
 
 // Get Quiz for Student (without correct answers)
 export const getQuizForStudentService = async (quizId: string, studentId: string) => {
@@ -42,43 +40,113 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
 
 // Submit Quiz and Calculate Score
 // Submit Quiz and Calculate Score
+// export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
+//       const { quizId, answers, timeTaken } = submitData;
+
+//       // Validate quiz exists
+//       const quiz = await Quiz.findById(quizId);
+//       if (!quiz) {
+//             throw new AppError(404, 'Quiz not found');
+//       }
+
+//       // Check if student has already attempted
+//       const existingAttempt = await QuizAttempt.findOne({ quizId, studentId });
+//       if (existingAttempt) {
+//             throw new AppError(400, 'You have already attempted this quiz. Only one attempt is allowed.');
+//       }
+
+//       // Validate time limit (20 minutes = 1200 seconds)
+//       const maxTimeInSeconds = quiz.timeLimit * 60;
+//       if (timeTaken > maxTimeInSeconds) {
+//             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
+//       }
+
+//       // Calculate score and prepare detailed results
+//       let score = 0;
+//       const detailedAnswers = answers.map((studentAnswer) => {
+//             // ✅ Find the question by _id instead of questionText
+//             const question = quiz.questions.find((q) => q._id.toString() === studentAnswer.questionId);
+//             if (!question) {
+//                   throw new AppError(400, `Invalid question ID: ${studentAnswer.questionId}`);
+//             }
+
+//             // Find the correct option from options array
+//             const correctOption = question.options.find((opt) => opt.isCorrect);
+//             if (!correctOption) {
+//                   throw new AppError(500, 'Quiz data is corrupted. No correct option found.');
+//             }
+
+//             // Check if student's answer matches the correct option text
+//             const isCorrect =
+//                   studentAnswer.selectedOption.trim().toLowerCase() === correctOption.optionText.trim().toLowerCase();
+
+//             if (isCorrect) {
+//                   score++;
+//             }
+
+//             return {
+//                   questionId: studentAnswer.questionId, // ✅ Store questionId instead of questionText
+//                   selectedOption: studentAnswer.selectedOption,
+//                   isCorrect,
+//                   correctOption: correctOption.optionText,
+//             };
+//       });
+
+//       // Calculate percentage
+//       const percentage = (score / quiz.totalMarks) * 100;
+
+//       // Save quiz attempt
+//       const quizAttempt = await QuizAttempt.create({
+//             quizId,
+//             studentId,
+//             answers: detailedAnswers,
+//             score,
+//             totalMarks: quiz.totalMarks,
+//             percentage: parseFloat(percentage.toFixed(2)),
+//             timeTaken,
+//             submittedAt: new Date(),
+//       });
+
+//       return {
+//             attemptId: quizAttempt._id,
+//             score,
+//             totalMarks: quiz.totalMarks,
+//             percentage: parseFloat(percentage.toFixed(2)),
+//             timeTaken,
+//             detailedResults: detailedAnswers, // Show correct/wrong answers
+//       };
+// };
+
 export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
       const { quizId, answers, timeTaken } = submitData;
 
-      // Validate quiz exists
       const quiz = await Quiz.findById(quizId);
       if (!quiz) {
             throw new AppError(404, 'Quiz not found');
       }
 
-      // Check if student has already attempted
       const existingAttempt = await QuizAttempt.findOne({ quizId, studentId });
       if (existingAttempt) {
             throw new AppError(400, 'You have already attempted this quiz. Only one attempt is allowed.');
       }
 
-      // Validate time limit (20 minutes = 1200 seconds)
       const maxTimeInSeconds = quiz.timeLimit * 60;
       if (timeTaken > maxTimeInSeconds) {
             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
       }
 
-      // Calculate score and prepare detailed results
       let score = 0;
       const detailedAnswers = answers.map((studentAnswer) => {
-            // ✅ Find the question by _id instead of questionText
             const question = quiz.questions.find((q) => q._id.toString() === studentAnswer.questionId);
             if (!question) {
                   throw new AppError(400, `Invalid question ID: ${studentAnswer.questionId}`);
             }
 
-            // Find the correct option from options array
             const correctOption = question.options.find((opt) => opt.isCorrect);
             if (!correctOption) {
                   throw new AppError(500, 'Quiz data is corrupted. No correct option found.');
             }
 
-            // Check if student's answer matches the correct option text
             const isCorrect =
                   studentAnswer.selectedOption.trim().toLowerCase() === correctOption.optionText.trim().toLowerCase();
 
@@ -87,14 +155,13 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             }
 
             return {
-                  questionId: studentAnswer.questionId, // ✅ Store questionId instead of questionText
+                  questionId: studentAnswer.questionId,
                   selectedOption: studentAnswer.selectedOption,
                   isCorrect,
                   correctOption: correctOption.optionText,
             };
       });
 
-      // Calculate percentage
       const percentage = (score / quiz.totalMarks) * 100;
 
       // Save quiz attempt
@@ -109,13 +176,26 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             submittedAt: new Date(),
       });
 
+      // 2. TRIGGER PROGRESS UPDATE
+      //  pass the studentId and the lessonId that belongs to this quiz
+      // await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
+
+      // Call the progress service to handle the 75% pass/fail logic
+    const progressResult = await progressService.evaluateModuleQuiz(
+        studentId, 
+        quizId, 
+        score, 
+        quiz.totalMarks
+    );
+
       return {
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
+            progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,
             timeTaken,
-            detailedResults: detailedAnswers, // Show correct/wrong answers
+            detailedResults: detailedAnswers,
       };
 };
 
@@ -131,7 +211,7 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
       }
 
       return {
-            quizName: (attempt.quizId as any).quizName,
+            quizName: (attempt?.quizId as any)?.quizName,
             score: attempt.score,
             totalMarks: attempt.totalMarks,
             percentage: attempt.percentage,
@@ -141,35 +221,79 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
       };
 };
 
-// Rest of the code remains same...
-
-// Get All Student's Quiz Attempts (Student Dashboard)
 export const getStudentAllAttemptsService = async (studentId: string) => {
-      const attempts = await QuizAttempt.find({ studentId })
-            .populate('quizId', 'quizName timeLimit totalMarks')
-            .sort({ submittedAt: -1 });
+      const result = await QuizAttempt.aggregate([
+            //Match student
+            {
+                  $match: {
+                        studentId: new Types.ObjectId(studentId),
+                  },
+            },
 
-      const totalQuizzes = attempts.length;
-      const totalScore = attempts.reduce((sum, attempt) => sum + attempt.score, 0);
-      const averagePercentage =
-            totalQuizzes > 0 ? attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalQuizzes : 0;
+            // Sort by latest attempt
+            {
+                  $sort: { submittedAt: -1 },
+            },
 
-      return {
-            totalQuizzesAttempted: totalQuizzes,
-            totalScore,
-            averagePercentage: parseFloat(averagePercentage.toFixed(2)),
-            attempts: attempts.map((attempt) => ({
-                  quizId: attempt.quizId._id,
-                  quizName: (attempt.quizId as any).quizName,
-                  score: attempt.score,
-                  totalMarks: attempt.totalMarks,
-                  percentage: attempt.percentage,
-                  submittedAt: attempt.submittedAt,
-            })),
-      };
+            // 3Join with Quiz collection
+            {
+                  $lookup: {
+                        from: 'quizzes', // 👈 collection name (important!)
+                        localField: 'quizId',
+                        foreignField: '_id',
+                        as: 'quiz',
+                  },
+            },
+
+            // 4Unwind quiz array
+            {
+                  $unwind: '$quiz',
+            },
+
+            // 5Group for summary + keep attempts
+            {
+                  $group: {
+                        _id: null,
+                        totalQuizzesAttempted: { $sum: 1 },
+                        totalScore: { $sum: '$score' },
+                        averagePercentage: { $avg: '$percentage' },
+                        attempts: {
+                              $push: {
+                                    quizId: '$quiz._id',
+                                    quizName: '$quiz.quizName',
+                                    score: '$score',
+                                    totalMarks: '$totalMarks',
+                                    percentage: '$percentage',
+                                    submittedAt: '$submittedAt',
+                              },
+                        },
+                  },
+            },
+
+            // 6Shape final response
+            {
+                  $project: {
+                        _id: 0,
+                        totalQuizzesAttempted: 1,
+                        totalScore: 1,
+                        averagePercentage: {
+                              $round: ['$averagePercentage', 2],
+                        },
+                        attempts: 1,
+                  },
+            },
+      ]);
+      console.log(result);
+      return (
+            result[0] || {
+                  totalQuizzesAttempted: 0,
+                  totalScore: 0,
+                  averagePercentage: 0,
+                  attempts: [],
+            }
+      );
 };
 
-// Check if student has attempted a quiz
 export const hasStudentAttemptedQuizService = async (quizId: string, studentId: string) => {
       const attempt = await QuizAttempt.findOne({ quizId, studentId });
       return !!attempt;

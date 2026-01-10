@@ -11,5 +11,5 @@ export interface ILesson {
   };
   isExercise: boolean; // Virtual Piano trigger
   order: number;
-  quizId?: Types.ObjectId | null;
+  exerciseIds: Types.ObjectId[];
 }

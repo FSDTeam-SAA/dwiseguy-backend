@@ -48,16 +48,16 @@ const quizSchema = new Schema<IQuiz>(
                   required: true,
                   trim: true,
             },
-            lessonId: {
+            moduleId: {
                   type: Schema.Types.ObjectId,
-                  ref: 'Lesson',
+                  ref: 'Module',
                   required: true,
-            }, // TODO: Uncomment when Lesson model is ready
-            classId: {
-                  type: Schema.Types.ObjectId,
-                  ref: 'Sublesson',
-                  required: true,
-            }, // TODO: Uncomment when Class model is ready
+            },
+            // lessonId: {
+            //       type: Schema.Types.ObjectId,
+            //       ref: 'Lesson',
+            //       required: true,
+            // },
             questions: {
                   type: [questionSchema],
                   required: true,
@@ -88,8 +88,7 @@ const quizSchema = new Schema<IQuiz>(
       { timestamps: true }
 );
 
-// Index for unique quiz name per class (TODO: Uncomment when classId is added)
-// quizSchema.index({ quizName: 1, classId: 1 }, { unique: true });
+quizSchema.index({ quizName: 1, moduleId: 1 }, { unique: true });
 
 // Validate that exactly one option is correct per question
 quizSchema.pre('save', function (next) {

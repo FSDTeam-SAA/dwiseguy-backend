@@ -6,7 +6,6 @@ import AppError from '../../errors/AppError';
 
 export const createQuiz = catchAsync(async (req: Request, res: Response) => {
       const adminId = req.user?._id;
-      if (!adminId) throw new AppError(401, 'Unauthorized');
 
       const quiz = await quizService.createQuizService(req.body, adminId.toString());
 
@@ -61,6 +60,7 @@ export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
 
 export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
       const { id } = req.params;
+      console.log(req.params);
 
       const result = await quizService.deleteQuizService(id);
 
@@ -68,7 +68,7 @@ export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
             statusCode: 200,
             success: true,
             message: result.message,
-            data: null,
+            data: result.data,
       });
 });
 
