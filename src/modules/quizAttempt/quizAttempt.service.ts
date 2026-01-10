@@ -178,13 +178,22 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
 
       // 2. TRIGGER PROGRESS UPDATE
       //  pass the studentId and the lessonId that belongs to this quiz
-      await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
+      // await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
+
+      // Call the progress service to handle the 75% pass/fail logic
+    const progressResult = await progressService.evaluateModuleQuiz(
+        studentId, 
+        quizId, 
+        score, 
+        quiz.totalMarks
+    );
 
       return {
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
+            progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,
             timeTaken,
             detailedResults: detailedAnswers,
       };
