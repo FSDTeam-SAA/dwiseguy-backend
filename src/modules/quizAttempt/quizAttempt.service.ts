@@ -6,9 +6,6 @@ import { TSubmitQuiz } from './quizAttempt.interface';
 import { QuizAttempt } from './quizAttempt.model';
 import { progressService } from '../progress/progress.service';
 
-/* ===============================
-   Student Quiz Attempt Services
-================================ */
 
 // Get Quiz for Student (without correct answers)
 export const getQuizForStudentService = async (quizId: string, studentId: string) => {
