@@ -20,12 +20,7 @@ const lessonSchema = new Schema<ILesson>({
   },
   isExercise: { type: Boolean, default: false },
   order: { type: Number, required: true },
-quizIds: [
-  {
-    type: Schema.Types.ObjectId,
-    ref: "Quiz"
-  }
-]
+  exerciseIds: [{ type: Schema.Types.ObjectId, ref: 'Exercise' }]
 
 }, { timestamps: true });
 
