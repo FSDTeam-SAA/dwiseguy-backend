@@ -1,6 +1,7 @@
 import express from 'express';
 import {
       createUser,
+      createBulkUsers,
       forgotPassword,
       loginUser,
       resetPassword,
@@ -21,6 +22,7 @@ import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 const router = express.Router();
 
 router.post('/registration', validateRequest(createUserSchema), createUser);
+router.post('/registration-bulk-users', createBulkUsers);
 router.post('/login', validateRequest(loginUserSchema), loginUser);
 router.get('/get-my-profile', authGuard, getMyProfile);
 router.get('/get-single-user/:id', authGuard, isAdmin, getSingleUser);
@@ -32,6 +34,5 @@ router.post('/regenerate-access-token', createAccessToken);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', upload.none(), resetPassword);
-
 
 export default router;

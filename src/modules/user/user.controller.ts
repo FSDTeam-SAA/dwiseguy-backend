@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { userService } from './user.service';
+import { generateStrongPassword, userService } from './user.service';
 import { mailer } from '../../utils/sendEmail';
-import { forgetPasswordOtpTemplate } from '../../utils/email.templates';
+import { accountCreatedEmailTemplate, forgetPasswordOtpTemplate } from '../../utils/email.templates';
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
 import { TLoginUser } from './user.interface';
@@ -20,6 +20,63 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 
       sendResponse(res, { statusCode: 201, success: true, message: 'User created successfully', data: user });
 });
+
+// @desc create bulk user
+export const createBulkUsers = catchAsync(async (req: Request, res: Response) => {
+      const { usersEmail } = req.body;
+
+      if (!Array.isArray(usersEmail)) {
+            throw new AppError(400, 'User email must be an array');
+      }
+
+      const createdUsers: string[] = [];
+      const failedUsers: string[] = [];
+      const alreadyExists: string[] = [];
+
+      for (const email of usersEmail) {
+            try {
+                  //  Check if user already exists
+                  const existingUser = await User.exists({ email });
+                  if (existingUser) {
+                        alreadyExists.push(email);
+                        continue; // skip creation
+                  }
+
+                  // Generate username
+                  const username = email.split('@')[0] + Math.floor(Math.random() * 1000);
+                  const password = generateStrongPassword();
+
+                  // Create user
+                  await User.create({ email, password, username });
+                  createdUsers.push(email);
+
+                  // Send email
+                  helperMail(email, password);
+            } catch (error) {
+                  // Track failures (DB or email sending errors)
+                  failedUsers.push(email);
+            }
+      }
+      // 6️⃣ Send response
+      sendResponse(res, {
+            statusCode: 201,
+            success: true,
+            message: 'Bulk user creation process completed',
+            data: {
+                  created: createdUsers,
+                  alreadyExists,
+                  failed: failedUsers,
+            },
+      });
+});
+
+const helperMail = async (email: string, password: string) => {
+      await mailer({
+            subject: 'Your Account Credentials',
+            template: accountCreatedEmailTemplate({ email, password, username: email.split('@')[0] }),
+            email,
+      });
+};
 
 // @desc    login user
 export const loginUser = catchAsync(async (req: Request, res: Response) => {

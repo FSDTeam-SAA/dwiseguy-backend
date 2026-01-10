@@ -78,3 +78,123 @@ export const forgetPasswordOtpTemplate = (
 </html>
 `;
 };
+
+type AccountCreatedEmailArgs = {
+      email: string;
+      password: string;
+      username: string;
+      appName?: string;
+      loginUrl?: string;
+};
+
+export const accountCreatedEmailTemplate = ({
+      email,
+      password,
+      username,
+      appName = 'Piano Academy',
+      loginUrl = 'https://piano-academy.com/login',
+}: AccountCreatedEmailArgs): string => {
+      return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Account Created</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 24px;
+      color: #334155;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    .credentials {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+    .credentials p {
+      margin: 6px 0;
+      font-weight: 600;
+    }
+    .button {
+      display: inline-block;
+      margin-top: 20px;
+      background: #2563eb;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 12px 22px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: #64748b;
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      ${appName}
+    </div>
+
+    <div class="content">
+      <p>Hello <strong>${username}</strong>,</p>
+
+      <p>Your account has been successfully created.</p>
+
+      <div class="credentials">
+        <p>Username: ${username}</p>
+        <p>Email: ${email}</p>
+        <p>Temporary Password: ${password}</p>
+      </div>
+
+      <p>
+        For security reasons, this password is temporary.  
+        Please log in and <strong>update your profile</strong> and 
+        <strong>change your password immediately</strong>.
+      </p>
+
+      <a href="${loginUrl}" class="button">Log In to Your Account</a>
+
+      <p style="margin-top: 24px;">
+        If you did not request this account, please contact our support team immediately.
+      </p>
+    </div>
+
+    <div class="footer">
+      © ${new Date().getFullYear()} ${appName}. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
