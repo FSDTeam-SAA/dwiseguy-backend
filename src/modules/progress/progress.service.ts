@@ -198,7 +198,6 @@ const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: st
     modules: moduleData
   };
 };
-
 const updateStudentProgress = async (userId: string, lessonId: string) => {
   const currentLesson = await Lesson.findById(lessonId);
   if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
@@ -309,70 +308,330 @@ const getLeaderboard = async () => {
 // };
 
 
+// const evaluateModuleQuiz = async (userId: string, quizId: string, score: number, totalMarks: number) => {
+//   const percentage = (score / totalMarks) * 100;
+//   const passPercentage = 75;
+
+//   // Find the quiz and the module it belongs to
+//   const quiz = await Quiz.findById(quizId);
+//   if (!quiz) throw new AppError(StatusCodes.NOT_FOUND, "Quiz not found");
+
+//   const moduleId = quiz.moduleId;
+//   const currentModule = await Module.findById(moduleId);
+//   const progress = await UserProgress.findOne({ userId, instrumentId: currentModule?.instrumentId });
+
+//   // ADD THIS GUARD CLAUSE
+//   if (!progress) {
+//     throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found. Please start the instrument first.");
+//   }
+
+//   if (percentage >= passPercentage) {
+//     // --- PASS LOGIC ---
+//     await UserProgress.updateOne(
+//       { _id: progress?._id },
+//       { $addToSet: { completedModules: moduleId } }
+//     );
+
+//     // Find Next Module
+//     const nextModule = await Module.findOne({
+//       instrumentId: currentModule?.instrumentId,
+//       order: { $gt: currentModule?.order }
+//     }).sort({ order: 1 });
+
+//     if (nextModule) {
+//       const firstLessonOfNext = await Lesson.findOne({ moduleId: nextModule._id }).sort({ order: 1 });
+//       progress!.currentModuleId = nextModule._id as Types.ObjectId;
+//       progress!.currentLessonId = firstLessonOfNext ? (firstLessonOfNext._id as Types.ObjectId) : null;
+//       await progress!.save();
+//       return { status: 'PASSED', nextModuleId: nextModule._id };
+//     }
+
+//     progress!.isInstrumentCompleted = true;
+//     await progress!.save();
+//     return { status: 'INSTRUMENT_COMPLETED' };
+
+//   } else {
+//     // --- FAIL LOGIC (The Tree Reset) ---
+//     // Find all lessons for this specific module
+//     const moduleLessons = await Lesson.find({ moduleId }).select('_id');
+//     const lessonIds = moduleLessons.map(l => l._id);
+
+//     // Reset: Remove these lessons from completedLessons and set pointer to first lesson
+//     await UserProgress.updateOne(
+//       { _id: progress?._id },
+//       {
+//         $pull: { completedLessons: { $in: lessonIds } },
+//         $set: { currentLessonId: lessonIds[0] }
+//       }
+//     );
+
+//     return {
+//       status: 'FAILED',
+//       message: `Scored ${percentage}%. You must score 75% to pass. Module progress has been reset.`,
+//       score: percentage
+//     };
+//   }
+// };
+
+// const evaluateModuleQuiz = async (userId: string, quizId: string, score: number, totalMarks: number) => {
+//   const percentage = (score / totalMarks) * 100;
+//   const passPercentage = 75;
+
+//   const quiz = await Quiz.findById(quizId);
+//   if (!quiz) throw new AppError(StatusCodes.NOT_FOUND, "Quiz not found");
+
+//   const moduleId = quiz.moduleId;
+//   const currentModule = await Module.findById(moduleId);
+  
+//   // LOGIC FIX: Ensure we use the exact instrumentId from the module
+//   const progress = await UserProgress.findOne({ 
+//     userId, 
+//     instrumentId: currentModule?.instrumentId 
+//   });
+
+//   if (!progress) {
+//     throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found.");
+//   }
+
+//   if (percentage >= passPercentage) {
+//     // ... (Keep your existing PASS logic here)
+//     // Ensure you return { ..., percentage } so the test script reads it
+//   } else {
+//     // --- FAIL LOGIC (The Tree Reset) ---
+    
+//     // 1. Find all lessons for THIS module
+//     const moduleLessons = await Lesson.find({ moduleId }).select('_id');
+    
+//     // 2. CRITICAL FIX: Convert ObjectIds to Strings to ensure the $pull matches 
+//     // the array elements regardless of how they were stored.
+//     const lessonIds = moduleLessons.map(l => l._id.toString());
+
+//     // 3. Reset the Tree Branch
+//     const updateResult = await UserProgress.updateOne(
+//       { _id: progress._id },
+//       {
+//         $pull: { 
+//           // We use $in with stringified IDs for maximum compatibility
+//           completedLessons: { $in: lessonIds } 
+//         },
+//         $set: { 
+//           // Reset pointer to the first lesson of this failed module
+//           currentLessonId: lessonIds.length > 0 ? new Types.ObjectId(lessonIds[0]) : null 
+//         }
+//       }
+//     );
+
+//     // console.log(`Tree Pruned: ${updateResult.modifiedCount} lessons removed`);
+
+//     return {
+//       status: 'FAILED',
+//       percentage, // Use 'percentage' instead of 'score' to match the test script
+//       message: `Scored ${percentage}%. Module progress has been reset.`,
+//     };
+//   }
+// };
+
+
+// const evaluateModuleQuiz = async (userId: string, quizId: string, score: number, totalMarks: number) => {
+//   const percentage = (score / totalMarks) * 100;
+//   const passPercentage = 75;
+
+//   // 1. Fetch Quiz and Module Context
+//   const quiz = await Quiz.findById(quizId);
+//   if (!quiz) throw new AppError(StatusCodes.NOT_FOUND, "Quiz not found");
+
+//   const moduleId = quiz.moduleId;
+//   const currentModule = await Module.findById(moduleId);
+//   if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
+
+//   // 2. Fetch User Progress (The Tree Root)
+//   const progress = await UserProgress.findOne({ 
+//     userId, 
+//     instrumentId: currentModule.instrumentId 
+//   });
+
+//   if (!progress) {
+//     throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found. Please start the instrument first.");
+//   }
+
+//   // --- BRANCHING LOGIC ---
+//   if (percentage >= passPercentage) {
+//     /**
+//      * PASS LOGIC: Unlock Next Level
+//      */
+//     await UserProgress.updateOne(
+//       { _id: progress._id },
+//       { $addToSet: { completedModules: moduleId } }
+//     );
+
+//     const nextModule = await Module.findOne({
+//       instrumentId: currentModule.instrumentId,
+//       order: { $gt: currentModule.order }
+//     }).sort({ order: 1 });
+
+//     if (nextModule) {
+//       const firstLessonOfNext = await Lesson.findOne({ moduleId: nextModule._id }).sort({ order: 1 });
+      
+//       await UserProgress.updateOne(
+//         { _id: progress._id },
+//         {
+//           $set: {
+//             currentModuleId: nextModule._id,
+//             currentLessonId: firstLessonOfNext ? firstLessonOfNext._id : null
+//           }
+//         }
+//       );
+//       return { 
+//         status: 'PASSED', 
+//         percentage, 
+//         nextModuleId: nextModule._id,
+//         message: `Congrats! You passed with ${percentage}%` 
+//       };
+//     }
+
+//     // No next module? Instrument finished.
+//     await UserProgress.updateOne(
+//       { _id: progress._id },
+//       { $set: { isInstrumentCompleted: true } }
+//     );
+//     return { status: 'INSTRUMENT_COMPLETED', percentage };
+
+//   } else {
+//     /**
+//      * FAIL LOGIC: Tree Pruning
+//      */
+//     // Find all lessons belonging to this module
+//     const moduleLessons = await Lesson.find({ moduleId }).select('_id');
+    
+//     // CRITICAL: Map to both ObjectId and String to ensure MongoDB finds a match 
+//     // regardless of how the ID was originally saved in the array.
+//     const lessonObjectIds = moduleLessons.map(l => new Types.ObjectId(l._id));
+//     const lessonStringIds = moduleLessons.map(l => l._id.toString());
+//     const combinedIds = [...lessonObjectIds, ...lessonStringIds];
+
+//     const updateResult = await UserProgress.updateOne(
+//       { _id: progress._id },
+//       {
+//         $pull: { 
+//           // Pull any matching lesson ID found in this module
+//           completedLessons: { $in: combinedIds } 
+//         },
+//         $set: { 
+//           // Reset their current position to the start of this module
+//           currentLessonId: lessonObjectIds.length > 0 ? lessonObjectIds[0] : null 
+//         }
+//       }
+//     );
+
+//     return {
+//       status: 'FAILED',
+//       progressStatus: 'FAILED', // Keep both for script/Postman compatibility
+//       percentage, 
+//       message: `Scored ${percentage}%. Module progress has been reset.`,
+//       prunedCount: updateResult.modifiedCount // Useful for debugging
+//     };
+//   }
+// };
+
+
+
+
+
+
+
 const evaluateModuleQuiz = async (userId: string, quizId: string, score: number, totalMarks: number) => {
   const percentage = (score / totalMarks) * 100;
   const passPercentage = 75;
 
-  // Find the quiz and the module it belongs to
+  // 1. Context Retrieval
   const quiz = await Quiz.findById(quizId);
   if (!quiz) throw new AppError(StatusCodes.NOT_FOUND, "Quiz not found");
 
   const moduleId = quiz.moduleId;
   const currentModule = await Module.findById(moduleId);
-  const progress = await UserProgress.findOne({ userId, instrumentId: currentModule?.instrumentId });
+  if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
 
-  // ADD THIS GUARD CLAUSE
+  // 2. Progress Retrieval
+  const progress = await UserProgress.findOne({ 
+    userId, 
+    instrumentId: currentModule.instrumentId 
+  });
+
   if (!progress) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found. Please start the instrument first.");
+    throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found.");
   }
 
+  // --- LOGIC BRANCHING ---
   if (percentage >= passPercentage) {
-    // --- PASS LOGIC ---
+    // PASS LOGIC: Unlock next level
     await UserProgress.updateOne(
-      { _id: progress?._id },
+      { _id: progress._id },
       { $addToSet: { completedModules: moduleId } }
     );
 
-    // Find Next Module
     const nextModule = await Module.findOne({
-      instrumentId: currentModule?.instrumentId,
-      order: { $gt: currentModule?.order }
+      instrumentId: currentModule.instrumentId,
+      order: { $gt: currentModule.order }
     }).sort({ order: 1 });
 
     if (nextModule) {
       const firstLessonOfNext = await Lesson.findOne({ moduleId: nextModule._id }).sort({ order: 1 });
-      progress!.currentModuleId = nextModule._id as Types.ObjectId;
-      progress!.currentLessonId = firstLessonOfNext ? (firstLessonOfNext._id as Types.ObjectId) : null;
-      await progress!.save();
-      return { status: 'PASSED', nextModuleId: nextModule._id };
+      await UserProgress.updateOne(
+        { _id: progress._id },
+        {
+          $set: {
+            currentModuleId: nextModule._id,
+            currentLessonId: firstLessonOfNext ? firstLessonOfNext._id : null
+          }
+        }
+      );
+      return { status: 'PASSED', percentage, nextModuleId: nextModule._id };
     }
 
-    progress!.isInstrumentCompleted = true;
-    await progress!.save();
-    return { status: 'INSTRUMENT_COMPLETED' };
+    await UserProgress.updateOne({ _id: progress._id }, { $set: { isInstrumentCompleted: true } });
+    return { status: 'INSTRUMENT_COMPLETED', percentage };
 
   } else {
-    // --- FAIL LOGIC (The Tree Reset) ---
-    // Find all lessons for this specific module
+    // FAIL LOGIC: The Tree Pruning (Reset)
+    // Find all lessons belonging to the module being failed
     const moduleLessons = await Lesson.find({ moduleId }).select('_id');
-    const lessonIds = moduleLessons.map(l => l._id);
+    
+    // CRITICAL FIX: We create an array containing BOTH ObjectId and String formats.
+    // This guarantees MongoDB finds the match regardless of how it was stored.
+    const lessonObjectIds = moduleLessons.map(l => new Types.ObjectId(l._id));
+    const lessonStringIds = moduleLessons.map(l => l._id.toString());
+    const combinedIds = [...lessonObjectIds, ...lessonStringIds];
 
-    // Reset: Remove these lessons from completedLessons and set pointer to first lesson
-    await UserProgress.updateOne(
-      { _id: progress?._id },
+    const updateResult = await UserProgress.updateOne(
+      { _id: progress._id },
       {
-        $pull: { completedLessons: { $in: lessonIds } },
-        $set: { currentLessonId: lessonIds[0] }
+        $pull: { 
+          // Pull any matching lesson ID found in this module from the progress array
+          completedLessons: { $in: combinedIds } 
+        },
+        $set: { 
+          // Move the student's pointer back to the first lesson of this module
+          currentLessonId: lessonObjectIds.length > 0 ? lessonObjectIds[0] : null 
+        }
       }
     );
 
     return {
       status: 'FAILED',
-      message: `Scored ${percentage}%. You must score 75% to pass. Module progress has been reset.`,
-      score: percentage
+      progressStatus: 'FAILED', 
+      percentage, 
+      message: `Scored ${percentage}%. Module progress has been reset.`,
+      data: {
+          score: percentage,
+          prunedCount: updateResult.modifiedCount // This should now be 1
+      }
     };
   }
 };
+
+
+
+
 
 export const progressService = {
   initializeProgress,
