@@ -73,3 +73,30 @@ export const userService = {
       generatePasswordResetToken,
       decodeResetToken,
 };
+
+export const generateStrongPassword = (length = 8): string => {
+      const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const lower = 'abcdefghijklmnopqrstuvwxyz';
+      const numbers = '0123456789';
+      const special = '@$!%*?&';
+      const all = upper + lower + numbers + special;
+
+      const getRandom = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+
+      let password = '';
+      password += getRandom(upper);
+      password += getRandom(lower);
+      password += getRandom(numbers);
+      password += getRandom(special);
+
+      for (let i = 4; i < length; i++) {
+            password += getRandom(all);
+      }
+
+      password = password
+            .split('')
+            .sort(() => Math.random() - 0.5)
+            .join('');
+
+      return password;
+};

@@ -52,12 +52,12 @@ const quizSchema = new Schema<IQuiz>(
                   type: Schema.Types.ObjectId,
                   ref: 'Module',
                   required: true,
-            }, // TODO: Uncomment when Lesson model is ready
-            lessonId: {
-                  type: Schema.Types.ObjectId,
-                  ref: 'Lesson',
-                  required: true,
-            }, // TODO: Uncomment when Class model is ready
+            },
+            // lessonId: {
+            //       type: Schema.Types.ObjectId,
+            //       ref: 'Lesson',
+            //       required: true,
+            // },
             questions: {
                   type: [questionSchema],
                   required: true,
@@ -88,7 +88,7 @@ const quizSchema = new Schema<IQuiz>(
       { timestamps: true }
 );
 
-quizSchema.index({ quizName: 1, lessonId: 1 }, { unique: true });
+quizSchema.index({ quizName: 1, moduleId: 1 }, { unique: true });
 
 // Validate that exactly one option is correct per question
 quizSchema.pre('save', function (next) {
