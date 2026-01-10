@@ -3,43 +3,59 @@ import { Quiz } from './quiz.model';
 
 import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
 import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { Lesson } from '../lesson/lesson.model';
+import { User } from '../user/user.model';
+import { Module } from '../module/module.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
-      // Check if quiz name already exists for this class
-      const existingQuiz = await Quiz.findOne({
-            quizName: quizData.quizName,
-            lessonId: quizData.lessonId,
-      });
-      console.log(existingQuiz);
-      if (existingQuiz) {
-            throw new AppError(400, 'Quiz name must be unique within a lesson');
+      const session = await mongoose.startSession();
+
+      try {
+            session.startTransaction();
+
+            const existingQuiz = await Quiz.findOne({
+                  quizName: quizData.quizName,
+                  lessonId: quizData.moduleId,
+            }).session(session);
+
+            if (existingQuiz) {
+                  throw new AppError(400, 'Quiz name must be unique within a lesson');
+            }
+
+            const quiz = await Quiz.create(
+                  [
+                        {
+                              ...quizData,
+                              createdBy: adminId,
+                              totalMarks: 20,
+                        },
+                  ],
+                  { session }
+            );
+
+            const quizObjectId = quiz[0]._id;
+
+            const updatedLesson = await Module.findOneAndUpdate(
+                  { _id: quizData.moduleId },
+                  { $addToSet: { quizIds: quizObjectId } },
+                  { new: true, session }
+            );
+
+            if (!updatedLesson) {
+                  throw new AppError(404, 'module not found');
+            }
+
+            await session.commitTransaction();
+            return quiz[0];
+      } catch (error) {
+            await session.abortTransaction();
+            throw error;
+      } finally {
+            session.endSession();
       }
-
-      const quiz = await Quiz.create({
-            ...quizData,
-            createdBy: adminId,
-            totalMarks: 20,
-      });
-
-      if (!quiz) throw new AppError(500, 'Failed to create quiz');
-      console.log(quiz);
-
-      const updatedLesson = await Lesson.findOneAndUpdate(
-            { _id: quizData.lessonId },
-            { $set: { quizId: quiz._id } },
-            { new: true }
-      );
-
-      if (!updatedLesson) {
-            await Quiz.findByIdAndDelete(quiz._id);
-            throw new AppError(500, 'Quiz created failed. Try again.');
-      }
-      return quiz;
 };
-
 export const getAllQuizzesService = async () => {
       const quizzes = await Quiz.find()
             .populate('createdBy', 'name email')
@@ -132,9 +148,6 @@ export const getQuizAnalyticsService = async (quizId: string) => {
             },
             {
                   $facet: {
-                        // -----------------------------
-                        // Overall statistics
-                        // -----------------------------
                         stats: [
                               {
                                     $group: {
@@ -148,15 +161,12 @@ export const getQuizAnalyticsService = async (quizId: string) => {
                               },
                         ],
 
-                        // -----------------------------
-                        // Recent attempts
-                        // -----------------------------
                         recentAttempts: [
                               { $sort: { submittedAt: -1 } },
                               { $limit: 10 },
                               {
                                     $lookup: {
-                                          from: 'users', // 👈 collection name
+                                          from: 'users',
                                           localField: 'studentId',
                                           foreignField: '_id',
                                           as: 'student',

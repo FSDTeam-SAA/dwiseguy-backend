@@ -20,6 +20,7 @@ const lessonSchema = new Schema<ILesson>({
   },
   isExercise: { type: Boolean, default: false },
   order: { type: Number, required: true },
+  // comment from Mohsin: This field should added on module.model.ts | I will add there. 
 quizIds: [
   {
     type: Schema.Types.ObjectId,

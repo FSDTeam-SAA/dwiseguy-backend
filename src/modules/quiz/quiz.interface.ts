@@ -31,7 +31,6 @@ export interface IQuiz extends Document {
 export type TCreateQuiz = {
       quizName: string;
       moduleId: string;
-      lessonId: string;
       questions: IQuestion[];
       timeLimit?: number;
 };

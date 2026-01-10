@@ -37,6 +37,6 @@ router.put('/update-quiz/:id', authGuard, isAdmin, validateRequest(updateQuizSch
 router.delete('/delete-quiz/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), deleteQuiz);
 
 // Get Quiz Analytics (Admin)
-router.get('/:id/analytics', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizAnalytics);
+router.get('/analytics/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizAnalytics);
 
 export default router;

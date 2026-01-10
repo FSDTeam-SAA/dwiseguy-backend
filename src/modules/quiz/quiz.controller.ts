@@ -6,7 +6,6 @@ import AppError from '../../errors/AppError';
 
 export const createQuiz = catchAsync(async (req: Request, res: Response) => {
       const adminId = req.user?._id;
-      if (!adminId) throw new AppError(401, 'Unauthorized');
 
       const quiz = await quizService.createQuizService(req.body, adminId.toString());
 
