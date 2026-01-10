@@ -5,11 +5,21 @@ import config from '../../config/config';
 import { Secret, SignOptions } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 
+const passwordValidator = [
+      {
+            validator: function (value: string) {
+                  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(value);
+            },
+            message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, one special character, and be at least 8 characters long',
+      },
+];
+
+
 const userSchema: Schema = new Schema<IUser>(
       {
             name: { type: String, required: false, trim: true },
             email: { type: String, required: true, lowercase: true, unique: true },
-            password: { type: String, select: 0, required: true },
+            password: { type: String, select: 0, required: true, validate: passwordValidator },
             username: { type: String, required: true, unique: true },
             age: { type: Number, default: null },
             phone: { type: String },

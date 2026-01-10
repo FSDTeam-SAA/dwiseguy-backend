@@ -1,6 +1,5 @@
 import { Types } from 'mongoose';
 import AppError from '../../errors/AppError';
-
 import { Quiz } from '../quiz/quiz.model';
 import { TSubmitQuiz } from './quizAttempt.interface';
 import { QuizAttempt } from './quizAttempt.model';
