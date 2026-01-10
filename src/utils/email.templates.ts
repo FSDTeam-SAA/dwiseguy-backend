@@ -1,7 +1,7 @@
 export const forgetPasswordOtpTemplate = (
       name: string,
       otp: string | number,
-      title: string = 'Reset Your Piano Academy Password'
+      title: string = 'Reset Your Piano Academy Password',
 ): string => {
       return `
 <!DOCTYPE html>

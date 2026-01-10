@@ -8,7 +8,6 @@ import { accountCreatedEmailTemplate, forgetPasswordOtpTemplate } from '../../ut
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
 import { TLoginUser } from './user.interface';
-import { title } from 'node:process';
 import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary';
 
 // @desc    Create user
@@ -247,7 +246,7 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
       await userService.saveOtpToDb(email, otp, expires);
       await mailer({
             subject: 'Password Reset OTP',
-            template: forgetPasswordOtpTemplate(user.name, otp, title), // Provide the required arguments
+            template: forgetPasswordOtpTemplate(user?.username, otp),
             email: email,
       });
 

@@ -5,17 +5,23 @@ import config from '../config/config';
 
 dotenv.config();
 
+
+
 // Create transporter
 const transporter: Transporter = nodemailer.createTransport({
-      service: 'gmail',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
+      host: config.brevo.host,
+      port: config.brevo.port,
+      secure: false, // Always false for port 587
       auth: {
-            user: config.email.host as string,
-            pass: config.email.password as string,
+            user: config.brevo.auth.user,
+            pass: config.brevo.auth.pass,
+      },
+      tls: {
+            rejectUnauthorized: false,
       },
 });
 
-
+// Mailer function
 interface MailerOptions {
       subject: string;
       template: string;
@@ -24,14 +30,16 @@ interface MailerOptions {
 
 export const mailer = async ({ subject, template, email }: MailerOptions): Promise<void> => {
       try {
-            await transporter.sendMail({
-                  from: `"Piano Academy" <${config.email.host}>`,
+            const info = await transporter.sendMail({
+                  from: `Piano Academy <sabbir.dev001@gmail.com>`,
                   to: email,
                   subject,
                   html: template,
             });
-      } catch (error: unknown) {
+
+            // console.log('📧 Email sent successfully:', info.messageId);
+      } catch (error) {
+            // console.error('❌ Failed to send email', error);
             throw new AppError(500, 'Failed to send email', error);
       }
 };
-
