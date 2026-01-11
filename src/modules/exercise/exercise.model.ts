@@ -6,10 +6,10 @@ const exerciseSchema = new Schema<IExcerise>({
       title: {
             type: String,
             required: [true, 'Title is required'],
-            enum: {
-                  values: ['Pitch', 'C-clef', 'Piano', 'Recap', 'Treble clef', 'Bass clef'],
-                  message: 'Invalid title. Allowed values are: Pitch, C-clef, Piano, Recap, Treble clef, Bass clef',
-            },
+            // enum: {
+            //       values: ['Pitch', 'C-clef', 'Piano', 'Recap', 'Treble clef', 'Bass clef'],
+            //       message: 'Invalid title. Allowed values are: Pitch, C-clef, Piano, Recap, Treble clef, Bass clef',
+            // },
       },
       description: { type: String, required: true },
       images: {
