@@ -1,6 +1,6 @@
 import express from 'express';
 import { progressController } from './progress.controller';
-import { authGuard } from '../../middlewares/auth.middleware';
+import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 
 const router = express.Router();
 
@@ -30,5 +30,15 @@ router.get('/leaderboard', progressController.getLeaderboard);
 
 // Mark a specific lesson as finished
 router.post('/complete-lesson', progressController.completeLesson);
+
+
+// Admin Stats
+router.get('/admin-stats', progressController.getAdminStats);
+
+// For the Admin Dashboard "Students" or "Reports" tab
+router.get(
+  '/admin/student-reports', 
+  progressController.getAllReports
+);
 
 export const progressRouter = router;

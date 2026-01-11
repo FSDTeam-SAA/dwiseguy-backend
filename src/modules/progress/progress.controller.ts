@@ -4,6 +4,9 @@ import sendResponse from '../../utils/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { progressService } from './progress.service';
 import AppError from '../../errors/AppError';
+import { UserProgress } from './progress.model';
+
+
 
 const startInstrument = catchAsync(async (req: Request, res: Response) => {
   const { instrumentId, userId: bodyUserId } = req.body;
@@ -84,10 +87,44 @@ const getLeaderboard = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAdminStats = catchAsync(async (req: Request, res: Response) => {
+  const result = await progressService.getAdminProgressStats();
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Admin statistics retrieved successfully',
+    data: result[0] || { // Return first object or empty defaults
+        totalEnrolledStudents: 0,
+        totalLessonsCompleted: 0,
+        totalModulesPassed: 0,
+        completedCourses: 0
+    },
+  });
+
+
+})
+
+
+const getAllReports = catchAsync(async (req: Request, res: Response) => {
+  // Pass req.query to handle ?page=1&limit=10
+  const result = await progressService.getAllStudentsProgressReportFromDb(req.query);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Student progress reports retrieved successfully',
+    meta: result.meta, 
+    data: result.data,
+  });
+});
+
 export const progressController = {
   startInstrument,
   getStudentInstrumentDetails,
   completeLesson,
   resumeInstrument,
-  getLeaderboard
+  getLeaderboard,
+  getAdminStats,
+  getAllReports
 };
