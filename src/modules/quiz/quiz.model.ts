@@ -63,21 +63,37 @@ const quizSchema = new Schema<IQuiz>(
                   required: true,
                   validate: {
                         validator: function (questions: IQuestion[]) {
-                              // Only enforce 20 questions if creating a new document
-                              return this.isNew ? questions.length === 20 : true;
+                              // ✅ Updated: Allow 20-50 questions
+                              return questions.length >= 20 && questions.length <= 50;
                         },
-                        message: 'Quiz must have exactly 20 questions',
+                        message: 'Quiz must have between 20 and 50 questions',
                   },
+            },
+            numberOfQuestionsToShow: {
+                  // ✅ NEW: How many questions student will see
+                  type: Number,
+                  required: true,
+                  min: 20,
+                  max: 50,
+                  default: 20,
             },
             timeLimit: {
                   type: Number,
                   required: true,
-                  default: 20, // 20 minutes
+                  default: 20,
             },
             totalMarks: {
                   type: Number,
                   required: true,
-                  default: 20, // 1 mark per question
+                  default: 20, // Will be set to numberOfQuestionsToShow
+            },
+            passingPercentage: {
+                  // ✅ NEW: Passing percentage (default 75%)
+                  type: Number,
+                  required: true,
+                  default: 75,
+                  min: 0,
+                  max: 100,
             },
             createdBy: {
                   type: Schema.Types.ObjectId,
@@ -90,8 +106,18 @@ const quizSchema = new Schema<IQuiz>(
 
 quizSchema.index({ quizName: 1, moduleId: 1 }, { unique: true });
 
-// Validate that exactly one option is correct per question
+// Validate constraints
 quizSchema.pre('save', function (next) {
+      // ✅ NEW: Validate numberOfQuestionsToShow <= total questions
+      if (this.numberOfQuestionsToShow > this.questions.length) {
+            return next(
+                  new Error(
+                        `numberOfQuestionsToShow (${this.numberOfQuestionsToShow}) cannot be greater than total questions (${this.questions.length})`
+                  )
+            );
+      }
+
+      // Validate that exactly one option is correct per question
       for (const question of this.questions) {
             const correctCount = question.options.filter((opt) => opt.isCorrect).length;
             if (correctCount !== 1) {
@@ -116,6 +142,10 @@ quizSchema.pre('save', function (next) {
       if (uniqueQuestions.size !== questionTexts.length) {
             return next(new Error('All question texts must be unique within the quiz'));
       }
+
+      // ✅ NEW: Set totalMarks = numberOfQuestionsToShow (1 mark per question)
+      this.totalMarks = this.numberOfQuestionsToShow;
+      this.timeLimit = this.numberOfQuestionsToShow;
 
       next();
 });
