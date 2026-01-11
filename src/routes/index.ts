@@ -6,6 +6,8 @@ import quizAttemptRoutes from '../modules/quizAttempt/quizAttempt.route';
 import { progressRouter } from '../modules/progress/progress.route';
 import moduleRouter from '../modules/module/module.route';
 import { lessonRouter } from '../modules/lesson/lesson.route';
+import { exerciseRouter } from '../modules/exercise/exercise.route';
+import { exerciseContentRouter } from '../modules/exerciseContent/exerciseContent.route';
 const router = Router();
 
 const moduleRoutes = [
@@ -36,6 +38,14 @@ const moduleRoutes = [
       {
             path: '/progress',
             route: progressRouter,
+      },
+      {
+            path: '/exercise',
+            route: exerciseRouter,
+      },
+      {
+            path: '/exercise-content',
+            route: exerciseContentRouter,
       },
 ];
 
