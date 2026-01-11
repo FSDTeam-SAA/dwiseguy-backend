@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const BASE_URL = 'http://localhost:5000/api/v1'; 
-const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTYyYjViNWU1YjMwMDkxYzhiYTNiZmIiLCJlbWFpbCI6ImtuYXllbWxvbDI0QGdtYWlsLmNvbSIsImlhdCI6MTc2ODA3NjcyOCwiZXhwIjoxNzY4MDgwMzI4fQ.exxHURex4tfZXijvDp3SHHtk6vVDUn7YfC-gM-qFWFA';
+const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTYyYjViNWU1YjMwMDkxYzhiYTNiZmIiLCJlbWFpbCI6ImtuYXllbWxvbDI0QGdtYWlsLmNvbSIsImlhdCI6MTc2ODA4MDYwNywiZXhwIjoxNzY4MDg0MjA3fQ.C7jVziFwwThSvVmPTxXgJTP6ZrmDJQYkaynrP_yqpVE';
 
 const IDS = {
     instrument: "695fea5afe5aba9700ce330f",

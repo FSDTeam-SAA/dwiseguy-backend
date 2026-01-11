@@ -31,112 +31,6 @@ const initializeProgress = async (userId: string, instrumentId: string) => {
   });
 };
 
-// const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: string) => {
-//   const instrument = await Instrument.findById(instrumentId).populate({
-//     path: 'modules',
-//     options: { sort: { order: 1 } },
-//     populate: { path: 'lessons', options: { sort: { order: 1 } } }
-//   });
-
-//   if (!instrument) throw new AppError(StatusCodes.NOT_FOUND, "Instrument not found");
-
-//   const progress = await UserProgress.findOne({ userId, instrumentId });
-
-//   // Flatten all lessons across all modules for progress bar
-//   const allLessons = instrument.modules.reduce((acc: any[], mod: any) => {
-//     return [...acc, ...mod.lessons];
-//   }, []);
-
-//   const totalLessons = allLessons.length;
-//   const completedCount = progress?.completedLessons?.length || 0;
-//   const completionPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-
-//   const moduleData = instrument.modules.map((mod: any, index: number) => {
-//     const isCompleted = progress?.completedModules.some(id => id.equals(mod._id));
-//     const isCurrent = progress?.currentModuleId?.equals(mod._id);
-//     const previousModule = index > 0 ? instrument.modules[index - 1] : null;
-//     const isPreviousCompleted = previousModule
-//       ? progress?.completedModules.some(id => id.equals(previousModule._id))
-//       : false;
-
-//     const isUnlocked = index === 0 || isCompleted || isCurrent || isPreviousCompleted;
-
-//     return {
-//       _id: mod._id,
-//       title: mod.title,
-//       order: mod.order,
-//       isUnlocked,
-//       isCompleted: isCompleted || false,
-//       lessons: mod.lessons.map((less: any) => ({
-//         _id: less._id,
-//         title: less.title,
-//         isCompleted: progress?.completedLessons.some(id => id.equals(less._id)),
-//         isLocked: !isUnlocked
-//       }))
-//     };
-//   });
-
-//   return {
-//     instrumentTitle: instrument.instrumentTitle,
-//     stats: { totalLessons, completedLessons: completedCount, completionPercentage },
-//     isInstrumentCompleted: progress?.isInstrumentCompleted || false,
-//     modules: moduleData
-//   };
-// };
-
-// const updateStudentProgress = async (userId: string, lessonId: string) => {
-//     const currentLesson = await Lesson.findById(lessonId);
-//     if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
-
-//     const currentModule = await Module.findById(currentLesson.moduleId);
-//     if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Parent Module not found");
-
-//     const instrumentId = currentModule.instrumentId;
-
-//     const progress = await UserProgress.findOne({ userId, instrumentId });
-//     if (!progress) throw new AppError(StatusCodes.NOT_FOUND, "Not enrolled in this instrument");
-
-//     // Mark Lesson as finished
-//     await UserProgress.updateOne(
-//         { _id: progress._id },
-//         { $addToSet: { completedLessons: new Types.ObjectId(lessonId) } }
-//     );
-
-//     // Check for Next Lesson in same Module
-//     const nextLesson = await Lesson.findOne({
-//         moduleId: currentModule._id,
-//         order: { $gt: currentLesson.order }
-//     }).sort({ order: 1 });
-
-//     if (nextLesson) {
-//         progress.currentLessonId = nextLesson._id as Types.ObjectId;
-//         await progress.save();
-//         return { status: 'NEXT_LESSON_UNLOCKED', nextId: nextLesson._id };
-//     }
-
-//     // Module Complete -> Find Next Module
-//     await UserProgress.updateOne(
-//         { _id: progress._id },
-//         { $addToSet: { completedModules: currentModule._id } }
-//     );
-
-//     const nextModule = await Module.findOne({
-//         instrumentId: instrumentId,
-//         order: { $gt: currentModule.order }
-//     }).sort({ order: 1 });
-
-//     if (nextModule) {
-//         const firstLessonOfNext = await Lesson.findOne({ moduleId: nextModule._id }).sort({ order: 1 });
-//         progress.currentModuleId = nextModule._id as Types.ObjectId;
-//         progress.currentLessonId = firstLessonOfNext ? (firstLessonOfNext._id as Types.ObjectId) : null;
-//         await progress.save();
-//         return { status: 'NEXT_MODULE_UNLOCKED', nextId: nextModule._id };
-//     }
-
-//     progress.isInstrumentCompleted = true;
-//     await progress.save();
-//     return { status: 'INSTRUMENT_COMPLETED' };
-// };
 
 
 const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: string) => {
@@ -198,7 +92,6 @@ const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: st
     modules: moduleData
   };
 };
-
 const updateStudentProgress = async (userId: string, lessonId: string) => {
   const currentLesson = await Lesson.findById(lessonId);
   if (!currentLesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
@@ -257,122 +150,236 @@ const getResumePoint = async (userId: string, instrumentId: string) => {
   };
 };
 
+// const getLeaderboard = async () => {
+//   return await UserProgress.aggregate([
+//     { $match: { "completedLessons.0": { $exists: true } } },
+//     {
+//       $group: {
+//         _id: '$userId',
+//         totalCompletedSteps: { $sum: { $size: '$completedLessons' } },
+//         instrumentsStarted: { $sum: 1 }
+//       }
+//     },
+//     { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userDetails' } },
+//     { $unwind: '$userDetails' },
+//     {
+//       $project: {
+//         name: '$userDetails.name',
+//         username: '$userDetails.username',
+//         avatar: '$userDetails.avatar',
+//         totalCompletedSteps: 1,
+//         instrumentsStarted: 1
+//       }
+//     },
+//     { $sort: { totalCompletedSteps: -1 } },
+//     { $limit: 10 }
+//   ]);
+// };
+
 const getLeaderboard = async () => {
   return await UserProgress.aggregate([
-    { $match: { "completedLessons.0": { $exists: true } } },
+    // 1. Filter out records that don't have a userId (sanity check)
+    { $match: { userId: { $exists: true } } },
+
+    // 2. Group and sum while guarding against missing arrays
     {
       $group: {
         _id: '$userId',
-        totalCompletedSteps: { $sum: { $size: '$completedLessons' } },
+        totalCompletedSteps: { 
+          $sum: { $size: { $ifNull: ["$completedLessons", []] } } 
+        },
+        modulesPassed: { 
+          $sum: { $size: { $ifNull: ["$completedModules", []] } } 
+        },
         instrumentsStarted: { $sum: 1 }
       }
     },
+
+    // 3. Lookup user details
     { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userDetails' } },
     { $unwind: '$userDetails' },
+
+    // 4. Project clean data
     {
       $project: {
+        _id: 0,
+        userId: '$_id',
         name: '$userDetails.name',
         username: '$userDetails.username',
         avatar: '$userDetails.avatar',
         totalCompletedSteps: 1,
+        modulesPassed: 1,
         instrumentsStarted: 1
       }
     },
+
+    // 5. Sort by lessons completed (or your performance score)
     { $sort: { totalCompletedSteps: -1 } },
     { $limit: 10 }
   ]);
 };
 
-// const checkIfLessonIsUnlocked = async (userId: string | Types.ObjectId, lessonId: string) => {
-//     const lessonObjId = new Types.ObjectId(lessonId);
 
-//     const lesson = await Lesson.findById(lessonObjId);
-//     if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
 
-//     const currentModule = await Module.findById(lesson.moduleId);
-//     if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
-
-//     const progress = await UserProgress.findOne({ 
-//         userId: new Types.ObjectId(userId), 
-//         instrumentId: currentModule.instrumentId 
-//     });
-
-//     if (!progress) return false;
-
-//     const isCompleted = progress.completedLessons.some(id => id.equals(lessonObjId));
-//     const isCurrent = progress.currentLessonId?.equals(lessonObjId);
-
-//     // First lesson of the first module is always open
-//     const isFirstLessonOverall = lesson.order === 1 && currentModule.order === 1;
-
-//     return isCompleted || isCurrent || isFirstLessonOverall;
-// };
 
 
 const evaluateModuleQuiz = async (userId: string, quizId: string, score: number, totalMarks: number) => {
   const percentage = (score / totalMarks) * 100;
   const passPercentage = 75;
 
-  // Find the quiz and the module it belongs to
+  // 1. Context Retrieval
   const quiz = await Quiz.findById(quizId);
   if (!quiz) throw new AppError(StatusCodes.NOT_FOUND, "Quiz not found");
 
   const moduleId = quiz.moduleId;
   const currentModule = await Module.findById(moduleId);
-  const progress = await UserProgress.findOne({ userId, instrumentId: currentModule?.instrumentId });
+  if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
 
-  // ADD THIS GUARD CLAUSE
+  // 2. Progress Retrieval
+  const progress = await UserProgress.findOne({ 
+    userId, 
+    instrumentId: currentModule.instrumentId 
+  });
+
   if (!progress) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found. Please start the instrument first.");
+    throw new AppError(StatusCodes.BAD_REQUEST, "User progress record not found.");
   }
 
+  // --- LOGIC BRANCHING ---
   if (percentage >= passPercentage) {
-    // --- PASS LOGIC ---
+    // PASS LOGIC: Unlock next level
     await UserProgress.updateOne(
-      { _id: progress?._id },
+      { _id: progress._id },
       { $addToSet: { completedModules: moduleId } }
     );
 
-    // Find Next Module
     const nextModule = await Module.findOne({
-      instrumentId: currentModule?.instrumentId,
-      order: { $gt: currentModule?.order }
+      instrumentId: currentModule.instrumentId,
+      order: { $gt: currentModule.order }
     }).sort({ order: 1 });
 
     if (nextModule) {
       const firstLessonOfNext = await Lesson.findOne({ moduleId: nextModule._id }).sort({ order: 1 });
-      progress!.currentModuleId = nextModule._id as Types.ObjectId;
-      progress!.currentLessonId = firstLessonOfNext ? (firstLessonOfNext._id as Types.ObjectId) : null;
-      await progress!.save();
-      return { status: 'PASSED', nextModuleId: nextModule._id };
+      await UserProgress.updateOne(
+        { _id: progress._id },
+        {
+          $set: {
+            currentModuleId: nextModule._id,
+            currentLessonId: firstLessonOfNext ? firstLessonOfNext._id : null
+          }
+        }
+      );
+      return { status: 'PASSED', percentage, nextModuleId: nextModule._id };
     }
 
-    progress!.isInstrumentCompleted = true;
-    await progress!.save();
-    return { status: 'INSTRUMENT_COMPLETED' };
+    await UserProgress.updateOne({ _id: progress._id }, { $set: { isInstrumentCompleted: true } });
+    return { status: 'INSTRUMENT_COMPLETED', percentage };
 
   } else {
-    // --- FAIL LOGIC (The Tree Reset) ---
-    // Find all lessons for this specific module
+    // FAIL LOGIC: The Tree Pruning (Reset)
+    // Find all lessons belonging to the module being failed
     const moduleLessons = await Lesson.find({ moduleId }).select('_id');
-    const lessonIds = moduleLessons.map(l => l._id);
+    
+    // CRITICAL FIX: We create an array containing BOTH ObjectId and String formats.
+    // This guarantees MongoDB finds the match regardless of how it was stored.
+    const lessonObjectIds = moduleLessons.map(l => new Types.ObjectId(l._id));
+    const lessonStringIds = moduleLessons.map(l => l._id.toString());
+    const combinedIds = [...lessonObjectIds, ...lessonStringIds];
 
-    // Reset: Remove these lessons from completedLessons and set pointer to first lesson
-    await UserProgress.updateOne(
-      { _id: progress?._id },
+    const updateResult = await UserProgress.updateOne(
+      { _id: progress._id },
       {
-        $pull: { completedLessons: { $in: lessonIds } },
-        $set: { currentLessonId: lessonIds[0] }
+        $pull: { 
+          // Pull any matching lesson ID found in this module from the progress array
+          completedLessons: { $in: combinedIds } 
+        },
+        $set: { 
+          // Move the student's pointer back to the first lesson of this module
+          currentLessonId: lessonObjectIds.length > 0 ? lessonObjectIds[0] : null 
+        }
       }
     );
 
     return {
       status: 'FAILED',
-      message: `Scored ${percentage}%. You must score 75% to pass. Module progress has been reset.`,
-      score: percentage
+      progressStatus: 'FAILED', 
+      percentage, 
+      message: `Scored ${percentage}%. Module progress has been reset.`,
+      data: {
+          score: percentage,
+          prunedCount: updateResult.modifiedCount // This should now be 1
+      }
     };
   }
 };
+
+
+const getAdminProgressStats = async () => {
+  return await UserProgress.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalEnrolledStudents: { $sum: 1 },
+        totalLessonsCompleted: { $sum: { $size: { $ifNull: ["$completedLessons", []] } } },
+        totalModulesPassed: { $sum: { $size: { $ifNull: ["$completedModules", []] } } },
+        completedCourses: { 
+          $sum: { $cond: [{ $eq: ["$isInstrumentCompleted", true] }, 1, 0] } 
+        }
+      }
+    }
+  ]);
+};
+
+
+const getAllStudentsProgressReportFromDb = async (query: Record<string, unknown>) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  // 1. Fetch total count for pagination metadata
+  const total = await UserProgress.countDocuments();
+
+  // 2. Fetch paginated, sorted, and populated records
+  const reports = await UserProgress.find()
+    .populate('userId', 'name email avatar')
+    .populate('instrumentId', 'instrumentTitle')
+    .populate('currentModuleId', 'title')
+    .populate('currentLessonId', 'title')
+    .sort({ updatedAt: -1 }) // Show most recent activity first
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  const data = reports.map((report) => ({
+    student: {
+      name: (report.userId as any)?.name || 'Unknown Student',
+      email: (report.userId as any)?.email || 'N/A',
+      avatar: (report.userId as any)?.avatar,
+    },
+    course: (report.instrumentId as any)?.instrumentTitle || 'Piano Course',
+    status: {
+      currentModule: (report.currentModuleId as any)?.title || 'Intro',
+      currentLesson: (report.currentLessonId as any)?.title || 'Starting soon',
+      isCompleted: report.isInstrumentCompleted || false,
+    },
+    metrics: {
+      lessonsDone: report.completedLessons?.length || 0,
+      modulesDone: report.completedModules?.length || 0,
+    },
+    lastActivity: (report as any).updatedAt,
+  }));
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data,
+  };
+};
+
 
 export const progressService = {
   initializeProgress,
@@ -380,6 +387,8 @@ export const progressService = {
   updateStudentProgress,
   getResumePoint,
   getLeaderboard,
-  evaluateModuleQuiz
+  evaluateModuleQuiz,
+  getAdminProgressStats,
+  getAllStudentsProgressReportFromDb
   // checkIfLessonIsUnlocked
 };
