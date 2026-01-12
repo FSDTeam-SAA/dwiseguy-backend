@@ -1,10 +1,17 @@
-import { AnyZodObject, ZodError } from 'zod';
+import { AnyZodObject, ZodError, ZodSchema } from 'zod';
 import { RequestHandler, NextFunction } from 'express';
 import fs from 'fs';
 
-export const validateRequest = (schema: AnyZodObject): RequestHandler => {
+export const validateRequest = (schema: ZodSchema): RequestHandler => {
       return async (req, res, next: NextFunction) => {
-            try {
+            try {                 
+                  //IF VALUE IS EMPTY STRING, THEN SHOW ATLEAST ONE FIELD
+                  if (req.body === undefined) {
+                        const error = new ZodError([
+                              { path: ['value'], message: 'At least one field is required', code: 'custom' },
+                        ]);
+                        return next(error);
+                  }
                   // Parse JSON string if `value` field exists
                   if (req.body.value && typeof req.body.value === 'string') {
                         try {

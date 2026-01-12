@@ -1,14 +1,22 @@
 import express from 'express';
-import { authGuard } from '../../middlewares/auth.middleware';
+import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 import { upload } from '../../middlewares/multer.middleware';
 import { validateRequest } from '../../middlewares/validateRequest.middleware';
 import { createExerciseContentSchema, updateExerciseContentSchema } from './exerciseContent.validation';
-import { createExerciseContent, deleteExerciseContentById, getAllExerciseContent, getExerciseContentById, updateExerciseContentById,  } from './exerciseContent.controller';
+import {
+      createExerciseContent,
+      deleteExerciseContentById,
+      getAllExerciseContent,
+      getExerciseContentById,
+      updateExerciseContentById,
+} from './exerciseContent.controller';
 
 const router = express.Router();
 
 router.post(
       '/create-exercise-content',
+      authGuard,
+      isAdmin,
       upload.fields([
             { name: 'image', maxCount: 1 },
             { name: 'audio', maxCount: 1 },
@@ -22,7 +30,9 @@ router.get('/get-single-exercise-content/:exercisecontentId', getExerciseContent
 
 router.patch(
       '/update-exercise-content/:exercisecontentId',
-      
+      authGuard,
+      isAdmin,
+
       upload.fields([
             { name: 'image', maxCount: 1 },
             { name: 'audio', maxCount: 1 },
@@ -31,6 +41,6 @@ router.patch(
       updateExerciseContentById
 );
 
-router.delete('/delete-exercise-content/:exercisecontentId', deleteExerciseContentById);
+router.delete('/delete-exercise-content/:exercisecontentId', authGuard, isAdmin, deleteExerciseContentById);
 
 export const exerciseContentRouter = router;

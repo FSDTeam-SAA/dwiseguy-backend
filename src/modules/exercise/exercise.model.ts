@@ -30,4 +30,15 @@ exerciseSchema.pre('save', async function (next) {
       }
       next();
 });
+//ptr middleware for check title is not be duplicate when update
+exerciseSchema.pre('findOneAndUpdate', async function (next) {
+      const update = this.getUpdate() as any;
+      if (update && update .title ) {
+            const duplicate = await Excerise.findOne({ title: update.title });
+            if (duplicate) {
+                  return next(new Error('Title already exists'));
+            }
+      }
+      next();
+})
 export const Excerise = model<IExcerise>('Exercise', exerciseSchema);

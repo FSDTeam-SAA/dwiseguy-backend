@@ -21,15 +21,15 @@ export default {
       tokens: {
             access: {
                   secret: process.env.ACCESS_TOKEN_SECRET,
-                  expiresIn: process.env.ACCESS_TOKEN_EXPIRES || '7d',
+                  expiresIn: Number(process.env.ACCESS_TOKEN_EXPIRES) || '7d',
             },
             refresh: {
                   secret: process.env.REFRESH_TOKEN_SECRET,
-                  expiresIn: process.env.REFRESH_TOKEN_EXPIRES || '90d',
+                  expiresIn: Number(process.env.REFRESH_TOKEN_EXPIRES) || '90d',
             },
             password: {
                   secret: process.env.PASSWORD_TOKEN_SECRET,
-                  expiresIn: process.env.PASSWORD_TOKEN_EXPIRES || '10m',
+                  expiresIn: Number(process.env.PASSWORD_TOKEN_EXPIRES) || '10m',
             },
       },
 
@@ -50,6 +50,7 @@ export default {
             auth: {
                   user: process.env.BREVO_SMTP_USER!,
                   pass: process.env.BREVO_SMTP_PASS!,
+                  apiKey: process.env.BREVO_SMTP_API_KEY!,
             },
             senderEmail: process.env.BREVO_SENDER_EMAIL!,
             senderName: process.env.BREVO_SENDER_NAME!,
