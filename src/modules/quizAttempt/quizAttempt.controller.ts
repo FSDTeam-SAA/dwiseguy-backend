@@ -31,7 +31,6 @@ export const getQuizForStudent = catchAsync(async (req: Request, res: Response) 
 // @access  Private/Student
 export const submitQuiz = catchAsync(async (req: Request, res: Response) => {
       const studentId = req.user?._id;
-      if (!studentId) throw new AppError(401, 'Unauthorized');
 
       const result = await quizAttemptService.submitQuizService(req.body, studentId.toString());
 
@@ -43,7 +42,7 @@ export const submitQuiz = catchAsync(async (req: Request, res: Response) => {
       });
 });
 
-// @desc    Get Student's Specific Quiz Result
+// @desc    Get Student's Specific Quiz Result (Basic info - no detailed answers)
 // @route   GET /api/quiz/student/result/:id
 // @access  Private/Student
 export const getStudentQuizResult = catchAsync(async (req: Request, res: Response) => {
@@ -57,6 +56,24 @@ export const getStudentQuizResult = catchAsync(async (req: Request, res: Respons
             statusCode: 200,
             success: true,
             message: 'Quiz result retrieved successfully',
+            data: result,
+      });
+});
+
+// @desc    Get Detailed Quiz Results with Correct/Wrong Answers ✅ NEW
+// @route   GET /api/quiz/student/detailed-result/:id
+// @access  Private/Student
+export const getDetailedQuizResults = catchAsync(async (req: Request, res: Response) => {
+      const { id } = req.params; // quizId
+      const studentId = req.user?._id;
+      if (!studentId) throw new AppError(401, 'Unauthorized');
+
+      const result = await quizAttemptService.getDetailedQuizResultsService(id, studentId.toString());
+
+      sendResponse(res, {
+            statusCode: 200,
+            success: true,
+            message: 'Detailed quiz results retrieved successfully',
             data: result,
       });
 });
