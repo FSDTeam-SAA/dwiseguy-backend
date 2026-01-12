@@ -144,17 +144,16 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             submittedAt: new Date(),
       });
 
-      // Update progress if needed (commented for now, uncomment when ready)
-      // if (quiz.lessonId) {
-      //       await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
-      // }
+      // 2. TRIGGER PROGRESS UPDATE
+      //  pass the studentId and the lessonId that belongs to this quiz
+      await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
 
-      // ✅ NEW: Return response WITHOUT detailed answers (hide correct answers initially)
       return {
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
+            // progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,
             timeTaken,
             status, // ✅ NEW: pass/retake_suggested/must_retake
             passingPercentage: quiz.passingPercentage,
