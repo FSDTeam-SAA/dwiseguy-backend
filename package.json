@@ -10,6 +10,7 @@
             "lint": "eslint . --ext .ts",
             "start": "node dist/server.js",
             "build": "tsc",
+            "build-and-start": "npm run build && npm run start",
             "seed": "ts-node src/scripts/seed.ts"
       },
       "keywords": [],
