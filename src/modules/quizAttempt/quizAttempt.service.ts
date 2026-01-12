@@ -19,6 +19,9 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       }
       const moduleId = quiz.moduleId;
       const module = await Module.findById(moduleId);
+      if (!module) {
+            throw new AppError(404, 'Module not found for this quiz or deleted');
+      }
       console.log('module: ', module);
       const lastLessonOfModule = module!.lessons[module!.lessons.length - 1].toString();
       console.log('lastLessonOfModule', lastLessonOfModule);
@@ -157,22 +160,6 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
       // await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
 
       // Call the progress service to handle the 75% pass/fail logic
-    const progressResult = await progressService.evaluateModuleQuiz(
-        studentId, 
-        quizId, 
-        score, 
-        quiz.totalMarks
-    );
-=========
-      // Update progress if needed (commented for now, uncomment when ready)
-      // if (quiz.lessonId) {
-      //       await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
-      // }
-      // 2. TRIGGER PROGRESS UPDATE
-      //  pass the studentId and the lessonId that belongs to this quiz
-      await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
-
-      // Call the progress service to handle the 75% pass/fail logic
       const progressResult = await progressService.evaluateModuleQuiz(studentId, quizId, score, quiz.totalMarks);
 
       // ✅ NEW: Return response WITHOUT detailed answers (hide correct answers initially)
@@ -181,7 +168,7 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
-            // progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,z
+            progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,
             timeTaken,
             status, // ✅ NEW: pass/retake_suggested/must_retake
             passingPercentage: quiz.passingPercentage,
