@@ -28,15 +28,15 @@ router.post('/create_quiz', authGuard, isAdmin, validateRequest(createQuizSchema
 router.get('/get-all-quizzes', authGuard, getAllQuizzes);
 
 // Get Quiz by ID (Admin) - with correct answers
-router.get('/single-quiz/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizById);
+router.get('/single-quiz/:id', authGuard, isAdmin, getQuizById);
 
 // Update Quiz (Admin)
 router.put('/update-quiz/:id', authGuard, isAdmin, validateRequest(updateQuizSchema), updateQuiz);
 
 // Delete Quiz (Admin)
-router.delete('/delete-quiz/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), deleteQuiz);
+router.delete('/delete-quiz/:id', authGuard, isAdmin, deleteQuiz);
 
 // Get Quiz Analytics (Admin)
-router.get('/analytics/:id', authGuard, isAdmin, validateRequest(getQuizByIdSchema), getQuizAnalytics);
+router.get('/analytics/:id', authGuard, isAdmin, getQuizAnalytics);
 
 export default router;
