@@ -8,7 +8,6 @@ import { accountCreatedEmailTemplate, forgetPasswordOtpTemplate } from '../../ut
 import AppError from '../../errors/AppError';
 import { User } from './user.model';
 import { TLoginUser } from './user.interface';
-import { title } from 'node:process';
 import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary';
 
 // @desc    Create user
@@ -95,6 +94,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 
       //update refresh token in database
       user.refreshToken = refreshToken;
+      user.isRememberMe = value.rememberme;
       await user.save();
 
       //save refresh token to cookie
@@ -135,8 +135,8 @@ export const getMyProfile = catchAsync(async (req: Request, res: Response) => {
 
 //get single user details
 export const getSingleUser = catchAsync(async (req: Request, res: Response) => {
-      const id = req.params.id as string;
-      const user = await User.findById(id).select(
+      const userId = req.params.userId as string;
+      const user = await User.findById(userId).select(
             '-password -refreshToken -password_reset_Otp -password_reset_Otp_expires -password_reset_token'
       );
       if (!user) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
@@ -247,7 +247,7 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
       await userService.saveOtpToDb(email, otp, expires);
       await mailer({
             subject: 'Password Reset OTP',
-            template: forgetPasswordOtpTemplate(user.name, otp, title), // Provide the required arguments
+            template: forgetPasswordOtpTemplate(user?.username, otp),
             email: email,
       });
 
@@ -311,7 +311,7 @@ export const resetPassword = catchAsync(async (req: Request, res: Response) => {
       sendResponse(res, {
             statusCode: StatusCodes.OK,
             success: true,
-            message: 'Password reset successful',
+            message: 'Password reset successfully',
       });
 });
 

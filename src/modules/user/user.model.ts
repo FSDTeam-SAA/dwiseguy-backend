@@ -1,9 +1,10 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model, Mongoose } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser, UserModel } from './user.interface';
 import config from '../../config/config';
 import { Secret, SignOptions } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
+import { ref } from 'node:process';
 
 const passwordValidator = [
       {
@@ -13,7 +14,6 @@ const passwordValidator = [
             message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, one special character, and be at least 8 characters long',
       },
 ];
-
 
 const userSchema: Schema = new Schema<IUser>(
       {
@@ -34,6 +34,33 @@ const userSchema: Schema = new Schema<IUser>(
                   duration: { type: Number, default: null },
                   file_type: { type: String, default: '' },
             },
+            instruments: [
+                  {
+                        instrumentId: { type: mongoose.Types.ObjectId, ref: 'Instrument' },
+                        instrumentName: { type: String, default: '' },
+                        modules: [
+                              {
+                                    moduleId: { type: mongoose.Types.ObjectId, ref: 'Module' },
+                                    moduleTitle: { type: String, default: '' },
+                                    lessons: [
+                                          {
+                                                lessonId: { type: mongoose.Types.ObjectId, ref: 'Lesson' },
+                                                lessonTitle: { type: String, default: '' },
+                                                isCompleted: { type: Boolean, default: false },
+                                                quizPerformance: [
+                                                      {
+                                                            quizId: { type: mongoose.Types.ObjectId, ref: 'Quiz' },
+                                                            quizTitle: { type: String, default: '' },
+                                                            quizResult: { type: Number, default: 0 },
+                                                      },
+                                                ],
+                                          },
+                                    ],
+                              },
+                        ],
+                  },
+            ],
+            isRememberMe: { type: Boolean, default: false },
             verificationInfo: {
                   verified: { type: Boolean, default: false },
                   verificationOtp: { type: Number, default: null },
@@ -75,7 +102,7 @@ userSchema.statics.isPasswordMatched = async function (plainTextPassword: string
 userSchema.statics.generateAccessToken = function (user: IUser) {
       const payload = { _id: user._id.toString(), email: user.email };
       const secret: Secret = config.tokens.access.secret as string;
-      const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as any };
+      const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as number };
 
       return jwt.sign(payload, secret, options);
 };
@@ -83,7 +110,9 @@ userSchema.statics.generateAccessToken = function (user: IUser) {
 userSchema.statics.generateRefreshToken = function (user: IUser) {
       const payload = { _id: user._id.toString() };
       const secret: Secret = config.tokens.refresh.secret as string;
-      const options: SignOptions = { expiresIn: config.tokens.refresh.expiresIn as any };
+      const options: SignOptions = {
+            expiresIn: user.isRememberMe ? (config.tokens.refresh.expiresIn as number) : '3d',
+      };
 
       return jwt.sign(payload, secret, options);
 };

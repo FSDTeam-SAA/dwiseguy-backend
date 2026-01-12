@@ -21,16 +21,16 @@ export default {
       tokens: {
             access: {
                   secret: process.env.ACCESS_TOKEN_SECRET,
-                  expiresIn: process.env.ACCESS_TOKEN_EXPIRES || '7d',
+                  expiresIn: Number(process.env.ACCESS_TOKEN_EXPIRES) || '7d',
             },
             refresh: {
                   secret: process.env.REFRESH_TOKEN_SECRET,
-                  expiresIn: process.env.REFRESH_TOKEN_EXPIRES || '90d',
+                  expiresIn: Number(process.env.REFRESH_TOKEN_EXPIRES) || '90d',
             },
-            password:{
+            password: {
                   secret: process.env.PASSWORD_TOKEN_SECRET,
-                  expiresIn: process.env.PASSWORD_TOKEN_EXPIRES || '10m',
-            }
+                  expiresIn: Number(process.env.PASSWORD_TOKEN_EXPIRES) || '10m',
+            },
       },
 
       // Bcrypt
@@ -43,16 +43,17 @@ export default {
             apiSecret: process.env.CLOUDINARY_API_SECRET,
       },
 
-      //Email
-      email: {
-            expires: Number(process.env.EMAIL_EXPIRES) || 900000,
-            host: process.env.HOST_MAIL,
-            port: Number(process.env.EMAIL_PORT) || 587,
-            address: process.env.EMAIL_ADDRESS,
-            password: process.env.EMAIL_PASS,
-            from: process.env.EMAIL_FROM,
-            to: process.env.EMAIL_TO,
-            admin: process.env.ADMIN_EMAIL,
+      //brevo email config
+      brevo: {
+            host: process.env.BREVO_SMTP_HOST!,
+            port: Number(process.env.BREVO_SMTP_PORT!),
+            auth: {
+                  user: process.env.BREVO_SMTP_USER!,
+                  pass: process.env.BREVO_SMTP_PASS!,
+                  apiKey: process.env.BREVO_SMTP_API_KEY!,
+            },
+            senderEmail: process.env.BREVO_SENDER_EMAIL!,
+            senderName: process.env.BREVO_SENDER_NAME!,
       },
 
       // Frontend

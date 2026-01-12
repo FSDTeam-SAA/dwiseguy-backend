@@ -19,6 +19,33 @@ export interface IUser extends Document {
             duration?: number;
             file_type?: string;
       };
+      instruments: [
+            {
+                  instrumentId: string;
+                  instrumentName: string;
+                  modules: [
+                        {
+                              moduleId: string;
+                              moduleTitle: string;
+                              lessons: [
+                                    {
+                                          lessonId: string;
+                                          lessonTitle: string;
+                                          isCompleted: boolean;
+                                          QuizPerformance: [
+                                                {
+                                                      quizId: string;
+                                                      quizTitle: string;
+                                                      quizResult: number;
+                                                },
+                                          ];
+                                    },
+                              ];
+                        },
+                  ];
+            },
+      ];
+      isRememberMe: boolean;
       password_reset_Otp: number | null;
       password_reset_otp_expires: Date | null;
       password_reset_token: string;
@@ -27,6 +54,7 @@ export interface IUser extends Document {
 export type TLoginUser = {
       email: string;
       password: string;
+      rememberme: boolean;
 };
 export interface UserModel extends Model<IUser> {
       isUserExistsByEmail(email: string): Promise<IUser>;

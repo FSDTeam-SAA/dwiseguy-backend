@@ -5,7 +5,6 @@ import router from './routes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
-
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -16,7 +15,6 @@ const corsOptions = {
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
       credentials: true,
 };
-
 
 app.use(cors(corsOptions));
 app.use(cookieParser());

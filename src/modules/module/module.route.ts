@@ -31,5 +31,20 @@ router.delete(
   moduleController.deleteModule
 );
 
+// User Control
+
+router.get(
+  '/get-modules/:instrumentId',
+  authGuard,
+  moduleController.getModulesByInstrument
+)
+
+router.get(
+  '/get-single-module/:moduleId', 
+  authGuard, 
+  moduleController.getSingleModule
+);
+
+
 const moduleRouter = router;
 export default moduleRouter;
