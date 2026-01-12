@@ -24,9 +24,13 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       console.log('lastLessonOfModule', lastLessonOfModule);
       //student progress operation
       const studenProgress = await UserProgress.findOne({ userId: studentId });
-      const currentLessonId = studenProgress?.currentLessonId;
+      const currentLessonId = studenProgress?.currentLessonId!.toString();
       console.log('studenProgress', studenProgress);
       console.log('studentID: ', studentId);
+      console.log('Current lesson id: ', currentLessonId);
+      if (lastLessonOfModule !== currentLessonId) {
+            throw new AppError(400, 'You have not completed this module yet');
+      }
 
       //  Shuffle questions
       let questionsToShow = [...quiz.questions];
@@ -78,15 +82,15 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
       }
 
-      // ✅ NEW: Validate answer count
-      if (answers.length < quiz.numberOfQuestionsToShow) {
-            throw new AppError(
-                  400,
-                  `You must answer at least ${quiz.numberOfQuestionsToShow} questions. You answered ${answers.length}.`
-            );
-      }
+      // NEW: Validate answer count
+      // if (answers.length < quiz.numberOfQuestionsToShow) {
+      //       throw new AppError(
+      //             400,
+      //             `You must answer at least ${quiz.numberOfQuestionsToShow} questions. You answered ${answers.length}.`
+      //       );
+      // }
 
-      // ✅ NEW: If student submitted more answers than required, randomly select
+      // NEW: If student submitted more answers than required, randomly select
       let answersToGrade = answers;
       if (answers.length > quiz.numberOfQuestionsToShow) {
             answersToGrade = answers.sort(() => Math.random() - 0.5).slice(0, quiz.numberOfQuestionsToShow);
@@ -121,7 +125,7 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
 
       const percentage = (score / quiz.totalMarks) * 100;
 
-      // ✅ NEW: Determine pass/fail status
+      // NEW: Determine pass/fail status
       let status: 'pass' | 'retake_suggested' | 'must_retake';
       if (percentage >= 75) {
             status = 'pass';
@@ -153,12 +157,7 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
       // await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
 
       // Call the progress service to handle the 75% pass/fail logic
-    const progressResult = await progressService.evaluateModuleQuiz(
-        studentId, 
-        quizId, 
-        score, 
-        quiz.totalMarks
-    );
+      const progressResult = await progressService.evaluateModuleQuiz(studentId, quizId, score, quiz.totalMarks);
 
       // ✅ NEW: Return response WITHOUT detailed answers (hide correct answers initially)
       return {
