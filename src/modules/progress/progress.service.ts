@@ -75,6 +75,8 @@ const getInstrumentDetailsWithProgress = async (userId: string, instrumentId: st
         };
     });
 
+
+
     return {
         instrumentTitle: instrument.instrumentTitle,
         stats: { totalLessons, completedLessons: completedCount, completionPercentage },
@@ -185,37 +187,78 @@ const getLeaderboard = async () => {
   ]);
 };
 
-// const checkIfLessonIsUnlocked = async (userId: string | Types.ObjectId, lessonId: string) => {
-//     const lessonObjId = new Types.ObjectId(lessonId);
-    
-//     const lesson = await Lesson.findById(lessonObjId);
-//     if (!lesson) throw new AppError(StatusCodes.NOT_FOUND, "Lesson not found");
 
-//     const currentModule = await Module.findById(lesson.moduleId);
-//     if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, "Module not found");
+const getAdminProgressStats = async () => {
+      return await UserProgress.aggregate([
+            {
+                  $group: {
+                        _id: null,
+                        totalEnrolledStudents: { $sum: 1 },
+                        totalLessonsCompleted: { $sum: { $size: { $ifNull: ['$completedLessons', []] } } },
+                        totalModulesPassed: { $sum: { $size: { $ifNull: ['$completedModules', []] } } },
+                        completedCourses: {
+                              $sum: { $cond: [{ $eq: ['$isInstrumentCompleted', true] }, 1, 0] },
+                        },
+                  },
+            },
+      ]);
+};
 
-//     const progress = await UserProgress.findOne({ 
-//         userId: new Types.ObjectId(userId), 
-//         instrumentId: currentModule.instrumentId 
-//     });
+const getAllStudentsProgressReportFromDb = async (query: Record<string, unknown>) => {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 10;
+      const skip = (page - 1) * limit;
 
-//     if (!progress) return false;
+      // 1. Fetch total count for pagination metadata
+      const total = await UserProgress.countDocuments();
 
-//     const isCompleted = progress.completedLessons.some(id => id.equals(lessonObjId));
-//     const isCurrent = progress.currentLessonId?.equals(lessonObjId);
-    
-//     // First lesson of the first module is always open
-//     const isFirstLessonOverall = lesson.order === 1 && currentModule.order === 1;
+      // 2. Fetch paginated, sorted, and populated records
+      const reports = await UserProgress.find()
+            .populate('userId', 'name email avatar')
+            .populate('instrumentId', 'instrumentTitle')
+            .populate('currentModuleId', 'title')
+            .populate('currentLessonId', 'title')
+            .sort({ updatedAt: -1 }) // Show most recent activity first
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
-//     return isCompleted || isCurrent || isFirstLessonOverall;
-// };
+      const data = reports.map((report) => ({
+            student: {
+                  name: (report.userId as any)?.name || 'Unknown Student',
+                  email: (report.userId as any)?.email || 'N/A',
+                  avatar: (report.userId as any)?.avatar,
+            },
+            course: (report.instrumentId as any)?.instrumentTitle || 'Piano Course',
+            status: {
+                  currentModule: (report.currentModuleId as any)?.title || 'Intro',
+                  currentLesson: (report.currentLessonId as any)?.title || 'Starting soon',
+                  isCompleted: report.isInstrumentCompleted || false,
+            },
+            metrics: {
+                  lessonsDone: report.completedLessons?.length || 0,
+                  modulesDone: report.completedModules?.length || 0,
+            },
+            lastActivity: (report as any).updatedAt,
+      }));
 
+      return {
+            meta: {
+                  page,
+                  limit,
+                  total,
+                  totalPage: Math.ceil(total / limit),
+            },
+            data,
+      };
+};
 
 export const progressService = {
-    initializeProgress,
-    getInstrumentDetailsWithProgress,
-    updateStudentProgress,
-    getResumePoint,
-    getLeaderboard,
-    // checkIfLessonIsUnlocked
+      initializeProgress,
+      getInstrumentDetailsWithProgress,
+      updateStudentProgress,
+      getResumePoint,
+      getLeaderboard,
+      getAllStudentsProgressReportFromDb,
+      getAdminProgressStats
 };

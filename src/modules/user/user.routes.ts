@@ -22,7 +22,7 @@ import { authGuard, isAdmin } from '../../middlewares/auth.middleware';
 const router = express.Router();
 
 router.post('/registration', validateRequest(createUserSchema), createUser);
-router.post('/registration-bulk-users', createBulkUsers);
+router.post('/registration-bulk-users', authGuard, isAdmin, createBulkUsers);
 router.post('/login', validateRequest(loginUserSchema), loginUser);
 router.get('/get-my-profile', authGuard, getMyProfile);
 router.get('/get-single-user/:id', authGuard, isAdmin, getSingleUser);
