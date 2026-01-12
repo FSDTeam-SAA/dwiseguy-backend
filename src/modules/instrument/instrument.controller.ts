@@ -28,6 +28,7 @@ export const createInstrument = catchAsync(async (req: Request, res: Response) =
                   await instrument.save();
             }
       }
+
       await instrument.save();
 
       sendResponse(res, {
@@ -87,33 +88,31 @@ export const getAllInstruments = catchAsync(async (req: Request, res: Response) 
 export const updateInstrument = catchAsync(async (req: Request, res: Response) => {
       const id = req.params.id as string;
       const value = req.body;
+      console.log(req.body);
+
       const image = req.file as Express.Multer.File;
 
       const instrument = await Instrument.findByIdAndUpdate(id, value, { new: true });
       if (!instrument) throw new AppError(404, 'Instrument not found');
       if (image) {
-            console.log((instrument as any).instrumentImage);
-
             if (
                   instrument?.instrumentImage &&
                   typeof instrument.instrumentImage === 'object' &&
                   'public_id' in instrument.instrumentImage
             ) {
                   //delete previous image from cloudinary
-                  console.log(instrument.instrumentImage);
-
                   await deleteFromCloudinary((instrument.instrumentImage as any).public_id as string, 'image');
             }
             const result = await uploadToCloudinary(image.path, 'image');
             if (result) {
-                  value.instrumentImage = {
+                  (instrument as any).instrumentImage = {
                         public_id: result.public_id,
                         url: result.url,
                   };
             }
       }
 
-      await instrument?.save();
+      await instrument.save();
 
       sendResponse(res, {
             statusCode: 200,

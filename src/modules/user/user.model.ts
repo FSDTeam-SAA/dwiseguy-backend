@@ -60,6 +60,7 @@ const userSchema: Schema = new Schema<IUser>(
                         ],
                   },
             ],
+            isRememberMe: { type: Boolean, default: false },
             verificationInfo: {
                   verified: { type: Boolean, default: false },
                   verificationOtp: { type: Number, default: null },
@@ -101,7 +102,7 @@ userSchema.statics.isPasswordMatched = async function (plainTextPassword: string
 userSchema.statics.generateAccessToken = function (user: IUser) {
       const payload = { _id: user._id.toString(), email: user.email };
       const secret: Secret = config.tokens.access.secret as string;
-      const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as any };
+      const options: SignOptions = { expiresIn: config.tokens.access.expiresIn as number };
 
       return jwt.sign(payload, secret, options);
 };
@@ -109,7 +110,9 @@ userSchema.statics.generateAccessToken = function (user: IUser) {
 userSchema.statics.generateRefreshToken = function (user: IUser) {
       const payload = { _id: user._id.toString() };
       const secret: Secret = config.tokens.refresh.secret as string;
-      const options: SignOptions = { expiresIn: config.tokens.refresh.expiresIn as any };
+      const options: SignOptions = {
+            expiresIn: user.isRememberMe ? (config.tokens.refresh.expiresIn as number) : '3d',
+      };
 
       return jwt.sign(payload, secret, options);
 };

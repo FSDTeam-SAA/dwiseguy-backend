@@ -45,6 +45,7 @@ export interface IUser extends Document {
                   ];
             },
       ];
+      isRememberMe: boolean;
       password_reset_Otp: number | null;
       password_reset_otp_expires: Date | null;
       password_reset_token: string;
@@ -53,6 +54,7 @@ export interface IUser extends Document {
 export type TLoginUser = {
       email: string;
       password: string;
+      rememberme: boolean;
 };
 export interface UserModel extends Model<IUser> {
       isUserExistsByEmail(email: string): Promise<IUser>;
