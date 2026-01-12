@@ -11,7 +11,7 @@ export type TResponse<T> = {
     total: number;
     totalPage: number;
   };
-  data: T;
+  data?: T;
 };
 
 // 2. USE THE TYPE IN THE FUNCTION
