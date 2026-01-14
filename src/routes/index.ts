@@ -8,6 +8,7 @@ import moduleRouter from '../modules/module/module.route';
 import { lessonRouter } from '../modules/lesson/lesson.route';
 import { exerciseRouter } from '../modules/exercise/exercise.route';
 import { exerciseContentRouter } from '../modules/exerciseContent/exerciseContent.route';
+import { contactusRoutes } from '../modules/contactus/contact.router';
 const router = Router();
 
 const moduleRoutes = [
@@ -46,7 +47,10 @@ const moduleRoutes = [
       {
             path: '/exercise-content',
             route: exerciseContentRouter,
-      },
+      },{
+            path: '/',
+            route: contactusRoutes,
+      }
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
