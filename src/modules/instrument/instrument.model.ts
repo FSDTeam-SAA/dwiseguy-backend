@@ -7,9 +7,16 @@ const moduleSchema = new Schema<Iinstrument>(
             instrumentTitle: { type: String, required: true },
             instrumentDescription: { type: String, required: true },
             instrumentImage: {
-                  public_id: String,
-                  url: String,
+                  public_id: {
+                        type: String,
+                        default: '',
+                  },
+                  url: {
+                        type: String,
+                        default: '',
+                  },
             },
+
             level: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
             modules: [
                   {
@@ -28,7 +35,7 @@ moduleSchema.pre('save', async function (next) {
       if (this.isModified('instrumentTitle')) {
             const duplicate = await Instrument.findOne({ instrumentTitle: this.instrumentTitle });
             if (duplicate) {
-                  throw new Error('Course title already exists');
+                  throw new Error('Instrument title already exists');
             }
       }
       next();

@@ -4,6 +4,7 @@ import { notFound } from './middlewares/notFound';
 import router from './routes';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { serverTemplate } from './utils/serverliveTemplate';
 
 const app = express();
 app.use(express.json());
@@ -18,6 +19,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
+app.get('/', serverTemplate);
+
 app.use('/api/v1', router);
 
 app.use(notFound as never);

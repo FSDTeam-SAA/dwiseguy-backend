@@ -18,8 +18,8 @@ export const createInstrumentSchema = z.object({
 export const updateInstrumentSchema = z.object({
       body: z
             .object({
-                  instrumentImage: z.string().min(2).optional(),
-                  courseDescription: z.string().min(10).optional(),
+                  instrumentTitle: z.string().min(2).optional(),
+                  instrumentDescription: z.string().min(10).optional(),
                   level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
 
                   // Preprocess isActive from FormData
