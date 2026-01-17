@@ -13,52 +13,65 @@ import { Module } from '../module/module.model';
 
 // Get Quiz for Student (without correct answers)
 export const getQuizForStudentService = async (quizId: string, studentId: string) => {
+      console.log('student', studentId);
+      /** 1️⃣ Fetch quiz */
       const quiz = await Quiz.findById(quizId);
       if (!quiz) {
             throw new AppError(404, 'Quiz not found');
       }
-      const moduleId = quiz.moduleId;
-      const module = await Module.findById(moduleId);
-      if (!module) {
-            throw new AppError(404, 'Module not found for this quiz or deleted');
-      }
-      console.log('module: ', module);
-      const lastLessonOfModule = module!.lessons[module!.lessons.length - 1].toString();
-      console.log('lastLessonOfModule', lastLessonOfModule);
-      //student progress operation
-      const studenProgress = await UserProgress.findOne({ userId: studentId });
-      const currentLessonId = studenProgress?.currentLessonId!.toString();
-      console.log('studenProgress', studenProgress);
-      console.log('studentID: ', studentId);
-      console.log('Current lesson id: ', currentLessonId);
-      if (lastLessonOfModule !== currentLessonId) {
-            throw new AppError(400, 'You have not completed this module yet');
+
+      /** 2️⃣ Fetch module */
+      const module = await Module.findById(quiz.moduleId);
+      console.log('mosule', module);
+      if (!module || module.lessons.length === 0) {
+            throw new AppError(404, 'Module not found or has no lessons');
       }
 
-      //  Shuffle questions
+      /** 3️⃣ Get last lesson of the module */
+      const lastLessonOfModule = module.lessons[module.lessons.length - 1].toString();
+      console.log('lastlesson', lastLessonOfModule);
+
+      /** 4️⃣ Get student progress */
+      const studentProgress = await UserProgress.findOne({
+            userId: studentId,
+      });
+
+      if (!studentProgress) {
+            throw new AppError(400, 'Student progress not found');
+      }
+
+      /** 5️⃣ Validate module completion using completedLessons array */
+      // চেক করছি মডিউলের শেষ লেসনটি completedLessons অ্যারেতে আছে কি না
+      const isLastLessonCompleted = studentProgress.completedLessons.some(
+            (lessonId) => lessonId.toString() === lastLessonOfModule
+      );
+      console.log('hgfyfytf', studentProgress.completedLessons);
+      if (!isLastLessonCompleted) {
+            throw new AppError(400, 'You have not completed the last lesson of this module yets');
+      }
+
+      // --- বাকি কোড অপরিবর্তিত থাকবে ---
+
+      // Shuffle questions
       let questionsToShow = [...quiz.questions];
 
       if (quiz.numberOfQuestionsToShow < quiz.questions.length) {
-            // Shuffle all questions
             questionsToShow = questionsToShow.sort(() => Math.random() - 0.5);
-            // Take only the required number
             questionsToShow = questionsToShow.slice(0, quiz.numberOfQuestionsToShow);
       }
 
-      // Return quiz without showing correct answers
       const quizForStudent = {
             _id: quiz._id,
             quizName: quiz.quizName,
             timeLimit: quiz.timeLimit,
-            totalMarks: quiz.totalMarks, // This is already = numberOfQuestionsToShow
-            numberOfQuestions: quiz.numberOfQuestionsToShow, // Tell student how many to answer
-            passingPercentage: quiz.passingPercentage, //Show passing percentage
+            totalMarks: quiz.totalMarks,
+            numberOfQuestions: quiz.numberOfQuestionsToShow,
+            passingPercentage: quiz.passingPercentage,
             questions: questionsToShow.map((question) => ({
                   questionId: question._id,
                   questionText: question.questionText,
                   options: question.options.map((option) => ({
                         optionText: option.optionText,
-                        // Do NOT send isCorrect field to student
                   })),
             })),
       };
@@ -164,6 +177,7 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
 
       // ✅ NEW: Return response WITHOUT detailed answers (hide correct answers initially)
       return {
+            quizName: quiz.quizName,
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
