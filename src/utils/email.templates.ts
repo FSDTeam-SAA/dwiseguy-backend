@@ -198,3 +198,40 @@ export const accountCreatedEmailTemplate = ({
 </html>
 `;
 };
+
+export const adminNotificationTemplate = (
+    title: string,
+    data: Record<string, any>
+): string => {
+    // Generate table rows dynamically from the data object
+    const tableRows = Object.entries(data)
+        .map(
+            ([key, value]) => `
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">${key}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; color: #333;">${value}</td>
+        </tr>`
+        )
+        .join('');
+
+    return `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #0f172a; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0;">Admin Alert: ${title}</h2>
+        </div>
+        <div style="padding: 20px;">
+            <p>A new event has occurred in the system that requires your attention:</p>
+            <table style="width: 100%; border-collapse: collapse;">
+                ${tableRows}
+            </table>
+            <p style="margin-top: 20px; font-size: 13px; color: #888;">
+                This is an automated notification from the Piano Academy Engine.
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+};
