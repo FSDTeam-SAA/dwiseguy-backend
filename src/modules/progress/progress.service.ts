@@ -6,6 +6,7 @@ import { Lesson } from '../lesson/lesson.model';
 import { UserProgress } from './progress.model';
 import { Types } from 'mongoose';
 import { Quiz } from '../quiz/quiz.model';
+import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 
 const initializeProgress = async (userId: string, instrumentId: string) => {
       const instObjId = new Types.ObjectId(instrumentId);
@@ -132,6 +133,82 @@ const updateStudentProgress = async (userId: string, lessonId: string) => {
       progress.isInstrumentCompleted = true;
       await progress.save();
       return { status: 'INSTRUMENT_COMPLETED' };
+};
+export const completeModuleService = async (userId: string, moduleId: string) => {
+      // 1️⃣ Module validate
+      const module = await Module.findById(moduleId);
+      if (!module) {
+            throw new AppError(StatusCodes.NOT_FOUND, 'Module not found');
+      }
+
+      // 2️⃣ User progress validate
+      const progress = await UserProgress.findOne({
+            userId,
+            instrumentId: module.instrumentId,
+      });
+
+      if (!progress) {
+            throw new AppError(StatusCodes.BAD_REQUEST, 'User not enrolled in this instrument');
+      }
+
+      // 3️⃣ Quiz validation (BEST attempt)
+      if (!module.quizIds || module.quizIds.length === 0) {
+            throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'No quiz configured for this module');
+      }
+
+      // Find user's best attempt among module quizzes
+      const bestAttempt = await QuizAttempt.findOne({
+            studentId: userId,
+            quizId: { $in: module.quizIds },
+      }).sort({ percentage: -1, createdAt: -1 });
+
+      if (!bestAttempt) {
+            throw new AppError(StatusCodes.BAD_REQUEST, 'No quiz attempt found for this module');
+      }
+
+      if (bestAttempt.status == 'must_retake') {
+            return {
+                  status: 'QUIZ_NOT_PASSED',
+                  quizStatus: bestAttempt.status,
+            };
+      }
+
+      // 4️⃣ Mark module completed
+      await UserProgress.updateOne({ _id: progress._id }, { $addToSet: { completedModules: module._id } });
+
+      // 5️⃣ Find next module
+      const nextModule = await Module.findOne({
+            instrumentId: module.instrumentId,
+            order: { $gt: module.order },
+      }).sort({ order: 1 });
+
+      if (nextModule) {
+            const firstLesson = await Lesson.findOne({
+                  moduleId: nextModule._id,
+            }).sort({ order: 1 });
+
+            progress.currentModuleId = nextModule._id as Types.ObjectId;
+            progress.currentLessonId = firstLesson ? (firstLesson._id as Types.ObjectId) : null;
+
+            await progress.save();
+
+            return {
+                  status: 'NEXT_MODULE_UNLOCKED',
+                  nextModuleId: nextModule._id,
+            };
+      }
+
+      // 6️⃣ Instrument completed
+      progress.isInstrumentCompleted = true;
+      progress.completedInstruments.push(module.instrumentId);
+      progress.currentModuleId = null;
+      progress.currentLessonId = null;
+
+      await progress.save();
+
+      return {
+            status: 'INSTRUMENT_COMPLETED',
+      };
 };
 
 const getResumePoint = async (userId: string, instrumentId: string) => {
@@ -337,7 +414,6 @@ const evaluateModuleQuiz = async (userId: string, quizId: string, score: number,
             };
       }
 };
-
 
 export const progressService = {
       initializeProgress,

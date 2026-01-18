@@ -48,6 +48,11 @@ const quizSchema = new Schema<IQuiz>(
                   required: true,
                   trim: true,
             },
+            instrumentId: {
+                  type: Schema.Types.ObjectId,
+                  ref: 'Instrument',
+                  required: true,
+            },
             moduleId: {
                   type: Schema.Types.ObjectId,
                   ref: 'Module',

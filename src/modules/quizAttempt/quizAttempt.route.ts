@@ -13,26 +13,16 @@ import { submitQuizSchema, getQuizByIdSchema } from '../quiz/quiz.validation';
 
 const router = express.Router();
 
-/* ===============================
-   Student Quiz Attempt Routes
-================================ */
-
-// Get all student's quiz attempts (Student Dashboard)
 router.get('/my-attempts', authGuard, getStudentAllAttempts);
 
-// Submit Quiz (Student)
 router.post('/submit', authGuard, validateRequest(submitQuizSchema), submitQuiz);
 
-// Check if student has attempted quiz
 router.get('/check-attempt/:id', authGuard, checkStudentAttempt);
 
-// Get Quiz for Student (without correct answers)
 router.get('/:id', authGuard, getQuizForStudent);
 
-// Get Student's Basic Quiz Result (no detailed answers)
 router.get('/result/:id', authGuard, getStudentQuizResult);
 
-// ✅ NEW: Get Detailed Quiz Results (with correct/wrong answers)
 router.get('/detailed-result/:id', authGuard, getDetailedQuizResults);
 
 export default router;
