@@ -7,31 +7,23 @@ import { progressService } from '../progress/progress.service';
 import { UserProgress } from '../progress/progress.model';
 import { Module } from '../module/module.model';
 
-/* ===============================
-   Student Quiz Attempt Services
-================================ */
-
-// Get Quiz for Student (without correct answers)
 export const getQuizForStudentService = async (quizId: string, studentId: string) => {
       console.log('student', studentId);
-      /** 1️⃣ Fetch quiz */
+
       const quiz = await Quiz.findById(quizId);
       if (!quiz) {
             throw new AppError(404, 'Quiz not found');
       }
 
-      /** 2️⃣ Fetch module */
       const module = await Module.findById(quiz.moduleId);
       console.log('mosule', module);
       if (!module || module.lessons.length === 0) {
             throw new AppError(404, 'Module not found or has no lessons');
       }
 
-      /** 3️⃣ Get last lesson of the module */
       const lastLessonOfModule = module.lessons[module.lessons.length - 1].toString();
       console.log('lastlesson', lastLessonOfModule);
 
-      /** 4️⃣ Get student progress */
       const studentProgress = await UserProgress.findOne({
             userId: studentId,
       });
@@ -40,8 +32,6 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
             throw new AppError(400, 'Student progress not found');
       }
 
-      /** 5️⃣ Validate module completion using completedLessons array */
-      // চেক করছি মডিউলের শেষ লেসনটি completedLessons অ্যারেতে আছে কি না
       const isLastLessonCompleted = studentProgress.completedLessons.some(
             (lessonId) => lessonId.toString() === lastLessonOfModule
       );
@@ -50,9 +40,6 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
             throw new AppError(400, 'You have not completed the last lesson of this module yets');
       }
 
-      // --- বাকি কোড অপরিবর্তিত থাকবে ---
-
-      // Shuffle questions
       let questionsToShow = [...quiz.questions];
 
       if (quiz.numberOfQuestionsToShow < quiz.questions.length) {
@@ -79,7 +66,6 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       return quizForStudent;
 };
 
-// ✅ Submit Quiz and Calculate Score (Updated)
 export const submitQuizService = async (submitData: TSubmitQuiz, studentId: string) => {
       const { quizId, answers, timeTaken } = submitData;
 
@@ -98,15 +84,6 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             throw new AppError(400, `Time limit exceeded. Maximum time allowed: ${quiz.timeLimit} minutes`);
       }
 
-      // NEW: Validate answer count
-      // if (answers.length < quiz.numberOfQuestionsToShow) {
-      //       throw new AppError(
-      //             400,
-      //             `You must answer at least ${quiz.numberOfQuestionsToShow} questions. You answered ${answers.length}.`
-      //       );
-      // }
-
-      // NEW: If student submitted more answers than required, randomly select
       let answersToGrade = answers;
       if (answers.length > quiz.numberOfQuestionsToShow) {
             answersToGrade = answers.sort(() => Math.random() - 0.5).slice(0, quiz.numberOfQuestionsToShow);
@@ -141,7 +118,6 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
 
       const percentage = (score / quiz.totalMarks) * 100;
 
-      // NEW: Determine pass/fail status
       let status: 'pass' | 'retake_suggested' | 'must_retake';
       if (percentage >= 75) {
             status = 'pass';
@@ -160,38 +136,26 @@ export const submitQuizService = async (submitData: TSubmitQuiz, studentId: stri
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
             timeTaken,
-            status, // ✅ NEW: Save status
+            status,
             submittedAt: new Date(),
       });
 
-      // Update progress if needed (commented for now, uncomment when ready)
-      // if (quiz.lessonId) {
-      //       await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
-      // }
-      // 2. TRIGGER PROGRESS UPDATE
-      //  pass the studentId and the lessonId that belongs to this quiz
-      // await progressService.updateStudentProgress(studentId, quiz.lessonId.toString());
-
-      // Call the progress service to handle the 75% pass/fail logic
       const progressResult = await progressService.evaluateModuleQuiz(studentId, quizId, score, quiz.totalMarks);
 
-      // ✅ NEW: Return response WITHOUT detailed answers (hide correct answers initially)
       return {
             quizName: quiz.quizName,
             attemptId: quizAttempt._id,
             score,
             totalMarks: quiz.totalMarks,
             percentage: parseFloat(percentage.toFixed(2)),
-            progressStatus: progressResult.status, // Tells UI if they PASSED or FAILED/RESET,
+            progressStatus: progressResult.status,
             timeTaken,
-            status, // ✅ NEW: pass/retake_suggested/must_retake
+            status,
             passingPercentage: quiz.passingPercentage,
-            message: getStatusMessage(status, percentage), // ✅ NEW: User-friendly message
-            // detailedResults will be available via separate endpoint
+            message: getStatusMessage(status, percentage),
       };
 };
 
-// ✅ Helper function for status messages
 function getStatusMessage(status: string, percentage: number): string {
       switch (status) {
             case 'pass':
@@ -205,7 +169,6 @@ function getStatusMessage(status: string, percentage: number): string {
       }
 }
 
-// ✅ NEW: Get Detailed Quiz Results (Separate endpoint to view correct/wrong answers)
 export const getDetailedQuizResultsService = async (quizId: string, studentId: string) => {
       const attempt = await QuizAttempt.findOne({ quizId, studentId }).populate(
             'quizId',
@@ -225,11 +188,10 @@ export const getDetailedQuizResultsService = async (quizId: string, studentId: s
             status: attempt.status,
             timeTaken: attempt.timeTaken,
             submittedAt: attempt.submittedAt,
-            detailedResults: attempt.answers, // ✅ Show correct/wrong answers
+            detailedResults: attempt.answers,
       };
 };
 
-// Get Student's Specific Quiz Result (Basic info only)
 export const getStudentQuizResultService = async (quizId: string, studentId: string) => {
       const attempt = await QuizAttempt.findOne({ quizId, studentId }).populate(
             'quizId',
@@ -249,21 +211,17 @@ export const getStudentQuizResultService = async (quizId: string, studentId: str
             status: attempt.status, // ✅ NEW
             timeTaken: attempt.timeTaken,
             submittedAt: attempt.submittedAt,
-            // NO detailedResults here - use separate endpoint
       };
 };
 
-// ✅ Get All Student Attempts (Using Aggregation for efficiency)
 export const getStudentAllAttemptsService = async (studentId: string) => {
       const result = await QuizAttempt.aggregate([
-            // 1. Match student
             {
                   $match: {
                         studentId: new Types.ObjectId(studentId),
                   },
             },
 
-            // 2. Join with Quiz collection
             {
                   $lookup: {
                         from: 'quizzes',
@@ -273,27 +231,24 @@ export const getStudentAllAttemptsService = async (studentId: string) => {
                   },
             },
 
-            // 3. Unwind quiz (handle deleted quizzes)
             {
                   $unwind: {
                         path: '$quiz',
-                        preserveNullAndEmptyArrays: true, // ✅ Keep attempts even if quiz deleted
+                        preserveNullAndEmptyArrays: true,
                   },
             },
 
-            // 4. Sort by latest
             {
                   $sort: { submittedAt: -1 },
             },
 
-            // 5. Group for summary + attempts
             {
                   $group: {
                         _id: null,
                         totalQuizzesAttempted: { $sum: 1 },
                         totalScore: { $sum: '$score' },
                         averagePercentage: { $avg: '$percentage' },
-                        // ✅ NEW: Count by status
+
                         totalPassed: {
                               $sum: {
                                     $cond: [{ $eq: ['$status', 'pass'] }, 1, 0],
@@ -314,27 +269,26 @@ export const getStudentAllAttemptsService = async (studentId: string) => {
                                     attemptId: '$_id',
                                     quizId: '$quiz._id',
                                     quizName: {
-                                          $ifNull: ['$quiz.quizName', 'Quiz Deleted'], // ✅ Handle deleted quizzes
+                                          $ifNull: ['$quiz.quizName', 'Quiz Deleted'],
                                     },
                                     score: '$score',
                                     totalMarks: '$totalMarks',
                                     percentage: '$percentage',
-                                    status: '$status', // ✅ NEW
+                                    status: '$status',
                                     submittedAt: '$submittedAt',
                               },
                         },
                   },
             },
 
-            // 6. Project final shape
             {
                   $project: {
                         _id: 0,
                         totalQuizzesAttempted: 1,
                         totalScore: 1,
                         totalPassed: 1,
-                        total_Retake_Suggested: 1, // ✅ NEW
-                        totalFailed: 1, // ✅ NEW
+                        total_Retake_Suggested: 1,
+                        totalFailed: 1,
                         averagePercentage: {
                               $round: ['$averagePercentage', 2],
                         },
@@ -355,7 +309,6 @@ export const getStudentAllAttemptsService = async (studentId: string) => {
       );
 };
 
-// Check if student has attempted quiz
 export const hasStudentAttemptedQuizService = async (quizId: string, studentId: string) => {
       const attempt = await QuizAttempt.findOne({ quizId, studentId });
       return !!attempt;
