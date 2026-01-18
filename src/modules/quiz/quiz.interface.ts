@@ -17,6 +17,7 @@ export interface IQuestion {
 export interface IQuiz extends Document {
       _id: string;
       quizName: string;
+      instrumentId: Types.ObjectId;
       moduleId: Types.ObjectId; // ✅ Using moduleId instead of lessonId
       // lessonId: Types.ObjectId; // TODO: Uncomment when Lesson model is ready
       questions: IQuestion[];
@@ -33,6 +34,7 @@ export interface IQuiz extends Document {
 export type TCreateQuiz = {
       quizName: string;
       moduleId: string; // ✅ Using moduleId
+      instrumentId: string;
       // lessonId: string; // TODO: Uncomment when Lesson model is ready
       questions: IQuestion[];
       numberOfQuestionsToShow: number; // ✅ NEW

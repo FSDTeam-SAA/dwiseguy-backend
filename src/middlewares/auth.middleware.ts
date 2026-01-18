@@ -1,4 +1,3 @@
-
 import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import httpStatus from 'http-status-codes';
@@ -12,7 +11,7 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
 
       try {
             const decoded = (await jwt.verify(token, config.tokens.access.secret!)) as JwtPayload;
-            
+
             const user = await User.findById(decoded._id);
             if (user) {
                   req.user = {
@@ -29,6 +28,12 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
       if (req.user?.role !== 'admin') {
+            throw new AppError(403, 'Access denied. You are not an admin.');
+      }
+      next();
+};
+export const isUser = (req: Request, res: Response, next: NextFunction): void => {
+      if (req.user?.role !== 'user') {
             throw new AppError(403, 'Access denied. You are not an admin.');
       }
       next();
