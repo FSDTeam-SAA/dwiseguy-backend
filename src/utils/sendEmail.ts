@@ -15,10 +15,13 @@ interface MailerOptions {
 const transporter: Transporter = nodemailer.createTransport({
       host: config.brevo.host,
       port: config.brevo.port,
-      secure: config.brevo.port === 465 ? true : false, // Always false for port 587
+      secure: config.brevo.port === 587 ? false : true, // Always false for port 587
       auth: {
             user: config.brevo.auth.user,
             pass: config.brevo.auth.pass,
+      },
+      tls: {
+            rejectUnauthorized: false,
       },
 });
 
