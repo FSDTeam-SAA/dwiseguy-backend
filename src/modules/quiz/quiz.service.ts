@@ -4,10 +4,7 @@ import { TCreateQuiz, TUpdateQuiz } from './quiz.interface';
 import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 import mongoose, { Types } from 'mongoose';
 import { Module } from '../module/module.model';
-
-/* ===============================
-   Admin Quiz Services
-================================ */
+import { Instrument } from '../instrument/instrument.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
@@ -15,6 +12,15 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
 
       try {
             session.startTransaction();
+            const isModuleUnderInstrument = await Instrument.exists({
+                  _id: quizData.instrumentId,
+                  modules: quizData.moduleId,
+            });
+
+            // throw error if module not found under the instrument
+            if (!isModuleUnderInstrument) {
+                  throw new AppError(404, 'Module does not belong to this instrument');
+            }
 
             const existingQuiz = await Quiz.findOne({
                   quizName: quizData.quizName,
@@ -38,8 +44,8 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
                         {
                               ...quizData,
                               createdBy: adminId,
-                              totalMarks: quizData.numberOfQuestionsToShow, // ✅ Updated: Set based on numberOfQuestionsToShow
-                              passingPercentage: quizData.passingPercentage || 75, // ✅ NEW: Default 75%
+                              totalMarks: quizData.numberOfQuestionsToShow, //✅ Updated: Set based on numberOfQuestionsToShow
+                              passingPercentage: quizData.passingPercentage || 75, //✅ NEW: Default 75%
                         },
                   ],
                   { session }
@@ -95,36 +101,59 @@ export const updateQuizService = async (quizId: string, updateData: TUpdateQuiz)
       const quiz = await Quiz.findById(quizId);
       if (!quiz) throw new AppError(404, 'Quiz not found');
 
-      // Check unique quiz name within module
+      // Unique quiz name check
       if (updateData.quizName && updateData.quizName !== quiz.quizName) {
             const existingQuiz = await Quiz.findOne({
                   quizName: updateData.quizName,
                   moduleId: quiz.moduleId,
                   _id: { $ne: quizId },
             });
-            if (existingQuiz) throw new AppError(400, 'Quiz name must be unique within a module');
+            if (existingQuiz) {
+                  throw new AppError(400, 'Quiz name must be unique within a module');
+            }
       }
 
-      // ✅ Validate numberOfQuestionsToShow if updating questions or numberOfQuestionsToShow
-      const finalQuestions = updateData.questions || quiz.questions;
-      const finalNumberOfQuestionsToShow = updateData.numberOfQuestionsToShow || quiz.numberOfQuestionsToShow;
+      // ✅ FIXED VALIDATION
+      const totalQuestionsCount = quiz.questions.length;
 
-      if (finalNumberOfQuestionsToShow > finalQuestions.length) {
+      if (
+            updateData.numberOfQuestionsToShow !== undefined &&
+            updateData.numberOfQuestionsToShow > totalQuestionsCount
+      ) {
             throw new AppError(
                   400,
-                  `numberOfQuestionsToShow (${finalNumberOfQuestionsToShow}) cannot be greater than total questions (${finalQuestions.length})`
+                  `numberOfQuestionsToShow (${updateData.numberOfQuestionsToShow}) cannot be greater than total questions (${totalQuestionsCount})`
             );
       }
 
-      // Update fields
+      // Update simple fields
       if (updateData.quizName) quiz.quizName = updateData.quizName;
       if (updateData.timeLimit) quiz.timeLimit = updateData.timeLimit;
-      if (updateData.numberOfQuestionsToShow) quiz.numberOfQuestionsToShow = updateData.numberOfQuestionsToShow; // ✅ NEW
-      if (updateData.passingPercentage !== undefined) quiz.passingPercentage = updateData.passingPercentage; // ✅ NEW
+      if (updateData.numberOfQuestionsToShow !== undefined) {
+            quiz.numberOfQuestionsToShow = updateData.numberOfQuestionsToShow;
+      }
+      if (updateData.passingPercentage !== undefined) {
+            quiz.passingPercentage = updateData.passingPercentage;
+      }
 
-      // Update questions if provided
+      // ✅ PARTIAL QUESTION UPDATE
       if (updateData.questions?.length) {
-            quiz.questions = updateData.questions;
+            updateData.questions.forEach((incomingQuestion) => {
+                  if (incomingQuestion._id) {
+                        // 🔹 Update existing question
+                        const index = quiz.questions.findIndex((q) => q._id?.toString() === incomingQuestion._id);
+
+                        if (index === -1) {
+                              throw new AppError(400, 'Invalid question id provided');
+                        }
+
+                        quiz.questions[index].questionText = incomingQuestion.questionText;
+                        quiz.questions[index].options = incomingQuestion.options;
+                  } else {
+                        // 🔹 Add new question
+                        quiz.questions.push(incomingQuestion as any);
+                  }
+            });
       }
 
       await quiz.save();

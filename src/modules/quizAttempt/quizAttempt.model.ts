@@ -54,7 +54,6 @@ const quizAttemptSchema = new Schema<IQuizAttempt>(
                   required: true,
             },
             status: {
-                  // ✅ NEW: Pass/Fail status
                   type: String,
                   enum: ['pass', 'retake_suggested', 'must_retake'],
                   required: true,
@@ -71,13 +70,8 @@ const quizAttemptSchema = new Schema<IQuizAttempt>(
       { timestamps: true }
 );
 
-// Index to ensure one attempt per student per quiz
-// quizAttemptSchema.index({ quizId: 1, studentId: 1 }, { unique: true });
-
-// ✅ NEW: Index for leaderboard queries (efficient sorting by score)
 quizAttemptSchema.index({ studentId: 1, score: -1 });
 
-// ✅ NEW: Index for status queries
 quizAttemptSchema.index({ status: 1 });
 
 export const QuizAttempt: Model<IQuizAttempt> = mongoose.model<IQuizAttempt>('QuizAttempt', quizAttemptSchema);

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import AppError from '../errors/AppError';
 import config from '../config/config';
 import axios from 'axios';
+import { StatusCodes } from 'http-status-codes';
 
 dotenv.config();
 interface MailerOptions {
@@ -10,17 +11,15 @@ interface MailerOptions {
       template: string;
       email: string;
 }
-// // Create transporter
+
+// Create transporter
 const transporter: Transporter = nodemailer.createTransport({
       host: config.brevo.host,
       port: config.brevo.port,
-      secure: false, // Always false for port 587
+      secure: config.brevo.port === 465 ? true : false, // Always false for port 587
       auth: {
             user: config.brevo.auth.user,
             pass: config.brevo.auth.pass,
-      },
-      tls: {
-            rejectUnauthorized: false,
       },
 });
 
@@ -28,20 +27,20 @@ const transporter: Transporter = nodemailer.createTransport({
 export const mailer = async ({ subject, template, email }: MailerOptions): Promise<void> => {
       try {
             const info = await transporter.sendMail({
-                  from: `Piano Academy <sabbir.dev001@gmail.com>`,
+                  from: `${config.brevo.senderName} <${config.brevo.senderEmail}>`,
                   to: email,
                   subject,
                   html: template,
             });
 
-            // console.log('📧 Email sent successfully:', info.messageId);
+            config.env === 'development' && console.log('Email sent successfully:', info.messageId);
       } catch (error) {
-            // console.error('❌ Failed to send email', error);
+            config.env === 'development' && console.error('Failed to send email', error);
             throw new AppError(500, 'Failed to send email', error);
       }
 };
 
-//!Use breve email service webhook
+// //!Use breve email service webhook
 // export const mailer = async ({ subject, template, email }: MailerOptions): Promise<void> => {
 //       const response = await axios.post(
 //             'https://api.brevo.com/v3/smtp/email',

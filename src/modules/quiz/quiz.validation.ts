@@ -68,7 +68,6 @@ export const updateQuizSchema = z.object({
             // lessonId: z.string().min(1, 'Lesson ID is required').optional(), // TODO: Uncomment when needed
             questions: z
                   .array(questionSchema)
-                  .min(20, 'Quiz must have at least 20 questions') // ✅ Changed
                   .max(50, 'Quiz must have at most 50 questions') // ✅ Changed
                   .refine(
                         (questions) => {
