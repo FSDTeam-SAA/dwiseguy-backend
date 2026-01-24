@@ -1,12 +1,56 @@
 import { Router } from 'express';
 import userRoutes from '../modules/user/user.routes';
+import instrumentRoutes from '../modules/instrument/instrument.routes';
+import quizRoutes from '../modules/quiz/quiz.route';
+import quizAttemptRoutes from '../modules/quizAttempt/quizAttempt.route';
+import { progressRouter } from '../modules/progress/progress.route';
+import moduleRouter from '../modules/module/module.route';
+import { lessonRouter } from '../modules/lesson/lesson.route';
+import { exerciseRouter } from '../modules/exercise/exercise.route';
+import { exerciseContentRouter } from '../modules/exerciseContent/exerciseContent.route';
+import { contactusRoutes } from '../modules/contactus/contact.router';
 const router = Router();
 
 const moduleRoutes = [
       {
-            path: '/users',
+            path: '/auth',
             route: userRoutes,
       },
+      {
+            path: '/instrument',
+            route: instrumentRoutes,
+      },
+      {
+            path: '/quiz',
+            route: quizRoutes,
+      },
+      {
+            path: '/quiz/student',
+            route: quizAttemptRoutes,
+      },
+      {
+            path: '/module',
+            route: moduleRouter,
+      },
+      {
+            path: '/lesson',
+            route: lessonRouter,
+      },
+      {
+            path: '/progress',
+            route: progressRouter,
+      },
+      {
+            path: '/exercise',
+            route: exerciseRouter,
+      },
+      {
+            path: '/exercise-content',
+            route: exerciseContentRouter,
+      },{
+            path: '/',
+            route: contactusRoutes,
+      }
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
