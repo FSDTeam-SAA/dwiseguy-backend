@@ -13,13 +13,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-const corsOptions = {
+app.use(cors({
       origin: '*',
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
-      credentials: true,
-};
-
-app.use(cors(corsOptions));
+      credentials: true
+}));
 app.use(cookieParser());
 app.get('/', serverTemplate);
 
