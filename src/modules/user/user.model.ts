@@ -19,7 +19,12 @@ const userSchema: Schema = new Schema<IUser>(
       {
             name: { type: String, required: false, trim: true },
             email: { type: String, required: true, lowercase: true, unique: true },
-            password: { type: String, select: 0, required: true, validate: passwordValidator },
+            password: {
+                  type: String,
+                  select: 0,
+                  required: true,
+                  // validate: passwordValidator
+            },
             username: { type: String, required: true, unique: true },
             age: { type: Number, default: null },
             phone: { type: String },
