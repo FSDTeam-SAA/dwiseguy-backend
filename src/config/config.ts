@@ -1,4 +1,7 @@
 import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 dotenv.config();
 
@@ -54,7 +57,10 @@ export default {
             },
             senderEmail: process.env.BREVO_SENDER_EMAIL!,
             senderName: process.env.BREVO_SENDER_NAME!,
+            adminEmail: process.env.ADMIN_EMAIL!,
       },
+
+      admin_email:process.env.ADMIN_EMAIL!,
 
       // Frontend
       frontendUrl: process.env.FRONTEND_URL,

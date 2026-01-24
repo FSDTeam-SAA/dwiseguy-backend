@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import AppError from '../errors/AppError';
 import config from '../config/config';
 import axios from 'axios';
+import { StatusCodes } from 'http-status-codes';
 
 dotenv.config();
 interface MailerOptions {
@@ -42,7 +43,7 @@ export const mailer = async ({ subject, template, email }: MailerOptions): Promi
       }
 };
 
-//!Use breve email service webhook
+// //!Use breve email service webhook
 // export const mailer = async ({ subject, template, email }: MailerOptions): Promise<void> => {
 //       const response = await axios.post(
 //             'https://api.brevo.com/v3/smtp/email',
