@@ -20,3 +20,6 @@ export const getQuizByIdSchema = z.object({
             id: z.string().min(1, 'Quiz ID is required'),
       }),
 });
+
+
+
