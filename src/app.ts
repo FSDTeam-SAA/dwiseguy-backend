@@ -16,11 +16,17 @@ app.use(cookieParser());
 
 app.use(
       cors({
-            origin: ['http://localhost:3000', `${config.frontendUrl}`],
-            methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+            origin: [
+                  'http://localhost:3000',
+                  'https://baomusic-snowy.vercel.app', // REMOVED the trailing slash
+                  config.frontendUrl   ?? ''    // Ensure this is just the domain
+            ],
+            methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
             credentials: true,
+            allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
       })
 );
+
 app.use(cookieParser());
 app.get('/', serverTemplate);
 
