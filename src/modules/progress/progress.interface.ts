@@ -15,6 +15,7 @@ export interface IUserProgress {
       completedLessons: Types.ObjectId[]; // Formerly completedSubLessons
       completedModules: Types.ObjectId[]; // Formerly completedLessons
       completedInstruments: Types.ObjectId[]; // Formerly completedLessons
+      completedExercises: Types.ObjectId[];
       isInstrumentCompleted: boolean; // Formerly isCourseCompleted
       quizAttempts: IQuizRecord[];
 }

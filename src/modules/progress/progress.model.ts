@@ -9,6 +9,7 @@ const userProgressSchema = new Schema<IUserProgress>(
             currentLessonId: { type: Schema.Types.ObjectId, ref: 'Lesson', default: null },
             completedLessons: [{ type: Schema.Types.ObjectId, ref: 'Lesson' }],
             completedModules: [{ type: Schema.Types.ObjectId, ref: 'Module' }],
+            completedExercises: [{ type: Schema.Types.ObjectId, ref: 'ExerciseContent' }],
             completedInstruments: [{ type: Schema.Types.ObjectId, ref: 'Instrument' }],
             isInstrumentCompleted: { type: Boolean, default: false },
       },

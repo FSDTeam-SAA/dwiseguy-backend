@@ -7,6 +7,7 @@ import { UserProgress } from './progress.model';
 import { Types } from 'mongoose';
 import { Quiz } from '../quiz/quiz.model';
 import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
+import { ExerciseContent } from '../exerciseContent/exerciseContent.model';
 
 const initializeProgress = async (userId: string, instrumentId: string) => {
       const instObjId = new Types.ObjectId(instrumentId);
@@ -134,6 +135,7 @@ const updateStudentProgress = async (userId: string, lessonId: string) => {
       await progress.save();
       return { status: 'INSTRUMENT_COMPLETED' };
 };
+
 export const completeModuleService = async (userId: string, moduleId: string) => {
       // 1️⃣ Module validate
       const module = await Module.findById(moduleId);
@@ -415,6 +417,43 @@ const evaluateModuleQuiz = async (userId: string, quizId: string, score: number,
       }
 };
 
+
+const getGlobalProfileStats = async (userId: string) => {
+      const userObjId = new Types.ObjectId(userId);
+
+      // 1. Get User Progress records
+      const userProgressRecords = await UserProgress.find({ userId: userObjId }).lean();
+
+      if (!userProgressRecords.length) return { lessonsPercent: 0, exercisesPercent: 0, quizPercent: 0 };
+
+      // 2. Parallel fetch totals for ALL enrolled instruments
+      const instrumentIds = userProgressRecords.map(p => p.instrumentId);
+
+      const [totalLessons, totalExercises] = await Promise.all([
+            Lesson.countDocuments({ instrumentId: { $in: instrumentIds } }),
+            ExerciseContent.countDocuments({ isActive: true }), // Adjust if exercises are instrument-specific
+      ]);
+
+      // 3. Aggregate Completed across all instruments
+      const totalCompletedLessons = userProgressRecords.reduce((acc, p) => acc + p.completedLessons.length, 0);
+      const totalCompletedExercises = userProgressRecords.reduce((acc, p) => acc + p.completedExercises.length, 0);
+
+      // 4. Global Quiz Average
+      const quizStats = await QuizAttempt.aggregate([
+            { $match: { studentId: userObjId } },
+            { $group: { _id: "$quizId", bestScore: { $max: "$percentage" } } },
+            { $group: { _id: null, avgScore: { $avg: "$bestScore" } } }
+      ]);
+
+      return {
+            lessonsCompleted: totalLessons > 0 ? Math.round((totalCompletedLessons / totalLessons) * 100) : 0,
+            exercisesCompleted: totalExercises > 0 ? Math.round((totalCompletedExercises / totalExercises) * 100) : 0,
+            quizzesCompleted: Math.round(quizStats[0]?.avgScore || 0),
+            enrolledInstruments: userProgressRecords.length
+      };
+};
+
+
 export const progressService = {
       initializeProgress,
       getInstrumentDetailsWithProgress,
@@ -424,4 +463,5 @@ export const progressService = {
       getAllStudentsProgressReportFromDb,
       getAdminProgressStats,
       evaluateModuleQuiz,
+      getGlobalProfileStats
 };
