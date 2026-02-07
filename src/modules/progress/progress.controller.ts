@@ -72,8 +72,8 @@ export const completeModule = catchAsync(async (req: Request, res: Response) => 
                   result.status === 'NEXT_MODULE_UNLOCKED'
                         ? 'Module completed and next module unlocked'
                         : result.status === 'INSTRUMENT_COMPLETED'
-                          ? 'Instrument completed successfully'
-                          : 'Quiz not passed',
+                              ? 'Instrument completed successfully'
+                              : 'Quiz not passed',
             data: result,
       });
 });
@@ -134,6 +134,29 @@ const getAllReports = catchAsync(async (req: Request, res: Response) => {
       });
 });
 
+
+const getMyGlobalStats = catchAsync(async (req: Request, res: Response) => {
+      const userId = req.user?._id;
+
+      if (!userId) {
+            throw new AppError(StatusCodes.UNAUTHORIZED, 'User identity not found');
+      }
+
+      // Invoke the Global Aggregator Service
+      const result = await progressService.getGlobalProfileStats(userId.toString());
+
+      sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            message: 'Portfolio statistics retrieved successfully',
+            data: result,
+      });
+});
+
+
+
+
+
 export const progressController = {
       startInstrument,
       getStudentInstrumentDetails,
@@ -143,4 +166,5 @@ export const progressController = {
       getAdminStats,
       getAllReports,
       completeModule,
+      getMyGlobalStats
 };

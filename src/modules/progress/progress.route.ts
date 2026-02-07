@@ -29,4 +29,7 @@ router.get('/admin-stats', progressController.getAdminStats);
 // For the Admin Dashboard "Students" or "Reports" tab
 router.get('/admin/student-reports', progressController.getAllReports);
 
+// Add this to your existing progress router
+router.get('/global-stats', authGuard, progressController.getMyGlobalStats);
+
 export const progressRouter = router;
