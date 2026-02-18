@@ -122,11 +122,24 @@ const completeLesson = catchAsync(async (req: Request, res: Response) => {
       });
 });
 
+const getSingleLesson = catchAsync(async (req: Request, res: Response) => {
+      const { lessonId } = req.params;
+      const result = await lessonService.getSingleLessonFromDb(lessonId);
+
+      sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            message: 'Lesson fetched successfully',
+            data: result,
+      });
+});
+
+
 export const lessonController = {
       createLesson,
       deleteLesson,
       updateLesson,
       getLessonByModule,
-      // getSingleLesson,
+      getSingleLesson,
       completeLesson,
 };

@@ -9,8 +9,8 @@ const router = express.Router();
 
 // Admin Management Routes
 router.post(
-  '/create-lesson', 
-  authGuard, 
+  '/create-lesson',
+  authGuard,
   isAdmin,
   upload.fields([
     { name: 'images', maxCount: 5 },
@@ -20,27 +20,27 @@ router.post(
 );
 
 router.patch(
-  '/update/:id', 
-  authGuard, 
-  isAdmin, 
+  '/update/:id',
+  authGuard,
+  isAdmin,
   upload.fields([
-    { name: 'images', maxCount: 5 }, 
+    { name: 'images', maxCount: 5 },
     { name: 'audio', maxCount: 1 }
   ]),
   lessonController.updateLesson
 );
 
 router.delete(
-  '/delete/:id', 
-  authGuard, 
-  isAdmin, 
+  '/delete/:id',
+  authGuard,
+  isAdmin,
   lessonController.deleteLesson
 );
 
 // User Management Routes
 
-router.get('/get-lessons-by-module/:moduleId', authGuard,lessonController.getLessonByModule);
-// router.get('/get-single-lesson/:lessonId', authGuard,lessonController.getSingleLesson);
+router.get('/get-lessons-by-module/:moduleId', authGuard, lessonController.getLessonByModule);
+router.get('/get-single-lesson/:lessonId', authGuard, lessonController.getSingleLesson);
 router.patch(
   '/complete-lesson/:lessonId',
   authGuard,
