@@ -64,8 +64,8 @@ const updateLessonInDB = async (id: string, payload: any) => {
     if (media?.audio) updateQuery['media.audio'] = media.audio;
 
     const result = await Lesson.findByIdAndUpdate(
-      id, 
-      { $set: updateQuery }, 
+      id,
+      { $set: updateQuery },
       { new: true, session, runValidators: true }
     );
 
@@ -119,7 +119,7 @@ const deleteLessonFromDB = async (id: string) => {
 
 // User Control
 
-const getLessonByModuleIdFromDb = async(moduleId: string) => {
+const getLessonByModuleIdFromDb = async (moduleId: string) => {
   const lessons = await findLessonsByModuleId(moduleId);
   return lessons;
 }
@@ -127,16 +127,18 @@ const getLessonByModuleIdFromDb = async(moduleId: string) => {
 
 
 const getSingleLessonFromDb = async (lessonId: string) => {
-  // Populate the quizId so the frontend knows where to redirect the user
-  const result = await Lesson.findById(lessonId).populate('quizId', 'quizName totalMarks');
+  const result = await Lesson.findById(lessonId);
+  if (!result) {
+    throw new AppError(StatusCodes.NOT_FOUND, 'Lesson not found');
+  }
   return result;
 };
 
-export const lessonService = { 
-  createLessonIntoDb, 
-  findLessonsByModuleId, 
-  deleteLessonFromDB, 
-  updateLessonInDB ,
+export const lessonService = {
+  createLessonIntoDb,
+  findLessonsByModuleId,
+  deleteLessonFromDB,
+  updateLessonInDB,
   getLessonByModuleIdFromDb,
   getSingleLessonFromDb
 };
