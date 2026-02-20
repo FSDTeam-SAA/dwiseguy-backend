@@ -5,6 +5,7 @@ import { QuizAttempt } from '../quizAttempt/quizAttempt.model';
 import mongoose, { Types } from 'mongoose';
 import { Module } from '../module/module.model';
 import { Instrument } from '../instrument/instrument.model';
+import { User } from '../user/user.model';
 
 // Create Quiz
 export const createQuizService = async (quizData: TCreateQuiz, adminId: string) => {
@@ -75,11 +76,79 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
 
 // Get All Quizzes
 export const getAllQuizzesService = async () => {
-      const quizzes = await Quiz.find()
-            .populate('createdBy', 'name email')
-            .populate('moduleId', 'title')
-            // .populate('lessonId', 'title') // TODO: Uncomment when needed
-            .sort({ createdAt: -1 });
+      const totalStudents = await User.countDocuments({ role: 'student' });
+
+      const quizzes = await Quiz.aggregate([
+            {
+                  $lookup: {
+                        from: 'quizattempts',
+                        localField: '_id',
+                        foreignField: 'quizId',
+                        as: 'attempts',
+                  },
+            },
+            {
+                  $addFields: {
+                        // Unique student count
+                        participatedStudents: {
+                              $size: {
+                                    $setUnion: ['$attempts.studentId'],
+                              },
+                        },
+                  },
+            },
+            {
+                  $addFields: {
+                        completionRate: {
+                              $cond: [
+                                    { $gt: [totalStudents, 0] },
+                                    {
+                                          $round: [
+                                                {
+                                                      $multiply: [
+                                                            {
+                                                                  $divide: ['$participatedStudents', totalStudents],
+                                                            },
+                                                            100,
+                                                      ],
+                                                },
+                                                2,
+                                          ],
+                                    },
+                                    0,
+                              ],
+                        },
+                  },
+            },
+            {
+                  $lookup: {
+                        from: 'users',
+                        localField: 'createdBy',
+                        foreignField: '_id',
+                        as: 'createdBy',
+                  },
+            },
+            {
+                  $unwind: {
+                        path: '$createdBy',
+                        preserveNullAndEmptyArrays: true,
+                  },
+            },
+            {
+                  $project: {
+                        quizName: 1,
+                        passingPercentage: 1,
+                        createdAt: 1,
+                        participatedStudents: 1,
+                        completionRate: 1,
+                        'createdBy.name': 1,
+                        'createdBy.email': 1,
+                  },
+            },
+            {
+                  $sort: { createdAt: -1 },
+            },
+      ]);
 
       return quizzes;
 };
