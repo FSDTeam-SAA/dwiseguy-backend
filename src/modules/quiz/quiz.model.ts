@@ -66,30 +66,27 @@ const quizSchema = new Schema<IQuiz>(
             questions: {
                   type: [questionSchema],
                   required: true,
-                  validate: {
-                        validator: function (questions: IQuestion[]) {
-                              // ✅ Updated: Allow 20-50 questions
-                              return questions.length >= 20 && questions.length <= 50;
-                        },
-                        message: 'Quiz must have between 20 and 50 questions',
-                  },
+                  // validate: {
+                  //       validator: function (questions: IQuestion[]) {
+                  //             // ✅ Updated: Allow 20-50 questions
+                  //             return questions.length >= 20 && questions.length <= 50;
+                  //       },
+                  //       message: 'Quiz must have between 20 and 50 questions',
+                  // },
             },
             numberOfQuestionsToShow: {
                   // ✅ NEW: How many questions student will see
                   type: Number,
-                  required: true,
-                  min: 20,
-                  max: 50,
-                  default: 20,
+                  // required: true,
             },
             timeLimit: {
                   type: Number,
-                  required: true,
+                  // required: true,
                   default: 20,
             },
             totalMarks: {
                   type: Number,
-                  required: true,
+                  // required: true,
                   default: 20, // Will be set to numberOfQuestionsToShow
             },
             passingPercentage: {

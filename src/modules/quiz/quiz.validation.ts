@@ -35,7 +35,7 @@ export const createQuizSchema = z.object({
                   // lessonId: z.string().min(1, 'Lesson ID is required'), // TODO: Uncomment when Lesson model is ready
                   questions: z
                         .array(questionSchema)
-                        .min(20, 'Quiz must have at least 20 questions') // ✅ Changed
+                        // .min(20, 'Quiz must have at least 20 questions') // ✅ Changed
                         .max(50, 'Quiz must have at most 50 questions') // ✅ Changed
                         .refine(
                               (questions) => {
@@ -45,7 +45,7 @@ export const createQuizSchema = z.object({
                               },
                               { message: 'All question texts must be unique within the quiz' }
                         ),
-                  numberOfQuestionsToShow: z.number().int().min(20).max(50), // ✅ NEW
+                  numberOfQuestionsToShow: z.number().int(), // ✅ NEW
                   timeLimit: z.number().min(1).max(120).optional().default(20),
                   passingPercentage: z.number().min(0).max(100).optional().default(75), // ✅ NEW
             })

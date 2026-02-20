@@ -75,10 +75,21 @@ export const createQuizService = async (quizData: TCreateQuiz, adminId: string) 
 };
 
 // Get All Quizzes
-export const getAllQuizzesService = async () => {
+export const getAllQuizzesService = async (page: number = 1, limit: number = 10) => {
+      const skip = (page - 1) * limit;
+
       const totalStudents = await User.countDocuments({ role: 'student' });
+      const totalQuizzes = await Quiz.countDocuments();
 
       const quizzes = await Quiz.aggregate([
+            // ✅ First sort
+            { $sort: { createdAt: -1 } },
+
+            // ✅ Then paginate
+            { $skip: skip },
+            { $limit: limit },
+
+            // ✅ THEN lookup attempts (only for paginated quizzes)
             {
                   $lookup: {
                         from: 'quizattempts',
@@ -89,7 +100,6 @@ export const getAllQuizzesService = async () => {
             },
             {
                   $addFields: {
-                        // Unique student count
                         participatedStudents: {
                               $size: {
                                     $setUnion: ['$attempts.studentId'],
@@ -145,12 +155,17 @@ export const getAllQuizzesService = async () => {
                         'createdBy.email': 1,
                   },
             },
-            {
-                  $sort: { createdAt: -1 },
-            },
       ]);
 
-      return quizzes;
+      return {
+            meta: {
+                  page,
+                  limit,
+                  total: totalQuizzes,
+                  totalPages: Math.ceil(totalQuizzes / limit),
+            },
+            data: quizzes,
+      };
 };
 
 // Get Quiz by ID (Admin) - with correct answers
