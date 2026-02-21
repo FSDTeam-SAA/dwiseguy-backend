@@ -5,6 +5,7 @@ export interface IExerciseContent {
       title: string;
       description: string;
       exerciseId: Types.ObjectId;
+      lessonId: Types.ObjectId;
       keyNotes: string[];
       image: { url: string; public_id: string } | null;
       audio: { url: string; public_id: string } | null;

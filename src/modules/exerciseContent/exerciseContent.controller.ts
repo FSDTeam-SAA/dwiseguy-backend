@@ -5,10 +5,12 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 import AppError from '../../errors/AppError';
 import { ExerciseContent } from './exerciseContent.model';
 import { Excerise } from '../exercise/exercise.model';
+import { Lesson } from '../lesson/lesson.model';
 
 //create exercise content
 export const createExerciseContent = catchAsync(async (req: Request, res: Response) => {
       const { value } = req.body;
+
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const image = files?.image?.[0];
       const audio = files?.audio?.[0];
@@ -25,6 +27,12 @@ export const createExerciseContent = catchAsync(async (req: Request, res: Respon
             { _id: exerciseContent.exerciseId },
             { $push: { ExerciseContent: exerciseContent._id } }
       );
+
+      //push excercise content id to lesson
+      const lesson = await Lesson.findByIdAndUpdate(
+            { _id: exerciseContent.lessonId },
+            { $push: { exerciseContentIds: exerciseContent._id } }
+      )
 
       //upload image to cloudinary
       if (image) {
@@ -142,6 +150,12 @@ export const deleteExerciseContentById = catchAsync(async (req: Request, res: Re
       const excercise = await Excerise.findByIdAndUpdate(
             { _id: exerciseContent.exerciseId },
             { $pull: { ExerciseContent: exerciseContent._id } }
+      );
+
+      //remove id from lesson
+      const lesson = await Lesson.findByIdAndUpdate(
+            { _id: exerciseContent.lessonId },
+            { $pull: { exerciseContentIds: exerciseContent._id } }
       );
 
       // if delete then delete image from cloudinary
