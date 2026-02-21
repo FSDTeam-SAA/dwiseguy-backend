@@ -39,6 +39,8 @@ router.delete(
 
 // User Management Routes
 
+
+
 router.get('/get-lessons-by-module/:moduleId', authGuard, lessonController.getLessonByModule);
 router.get('/get-single-lesson/:lessonId', authGuard, lessonController.getSingleLesson);
 router.patch(
