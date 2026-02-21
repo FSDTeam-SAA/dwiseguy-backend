@@ -1,10 +1,12 @@
 import { model, Schema } from 'mongoose';
 import { IExerciseContent } from './exerciseContent.interface';
+import { Lesson } from '../lesson/lesson.model';
 
 const exerciseContentSchema = new Schema<IExerciseContent>({
       title: { type: String, required: true },
       description: { type: String, required: true },
       exerciseId: { type: Schema.Types.ObjectId, ref: 'Exercise', required: true },
+      lessonId: { type: Schema.Types.ObjectId, ref: 'Lesson', required: true },
       keyNotes: [{ type: String }],
       image: {
             url: { type: String },
