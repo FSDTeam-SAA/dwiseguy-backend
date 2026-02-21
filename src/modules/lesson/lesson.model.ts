@@ -1,6 +1,3 @@
-
-
-
 import { Schema, model } from 'mongoose';
 import { ILesson } from './lesson.interface';
 
@@ -20,7 +17,7 @@ const lessonSchema = new Schema<ILesson>({
   },
   isExercise: { type: Boolean, default: false },
   order: { type: Number, required: true },
-  exerciseIds: [{ type: Schema.Types.ObjectId, ref: 'Exercise' }]
+  exerciseContentIds: [{ type: Schema.Types.ObjectId, ref: 'ExerciseContent' }]
 
 }, { timestamps: true });
 
