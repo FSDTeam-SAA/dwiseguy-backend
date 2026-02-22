@@ -141,7 +141,7 @@ const contactUsFromDb = async (payload: IContact) => {
                     "Reference ID": newContact._id.toString()
                 })
             });
-            console.log(`[Notification] Admin alert sent successfully to ${adminEmail}`);
+            //console.log(`[Notification] Admin alert sent successfully to ${adminEmail}`);
         } catch (err: any) {
             // Critical: Log to your logging service (like Sentry or Winston)
             console.error(`[CRITICAL ERROR] Admin Notification Failed:`, err.message);

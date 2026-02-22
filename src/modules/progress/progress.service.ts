@@ -93,7 +93,7 @@ const updateStudentProgress = async (userId: string, lessonId: string) => {
       if (!currentModule) throw new AppError(StatusCodes.NOT_FOUND, 'Parent Module not found');
 
       const instrumentId = currentModule.instrumentId;
-      console.log(userId, instrumentId, 'jsrogtjerwoijgo');
+      //console.log(userId, instrumentId, 'jsrogtjerwoijgo');
       const progress = await UserProgress.findOne({ userId, instrumentId });
       if (!progress) throw new AppError(StatusCodes.NOT_FOUND, 'Not enrolled in this instrument');
 

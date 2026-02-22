@@ -241,7 +241,7 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
       if (!user) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
 
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expires = new Date(Date.now() + 10 * 60 * 1000);
+      const expires = new Date(Date.now() + 5 * 60 * 1000);
 
       // CRITICAL: Save to DB
       await userService.saveOtpToDb(email, otp, expires);

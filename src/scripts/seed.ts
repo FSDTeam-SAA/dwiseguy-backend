@@ -8,22 +8,22 @@ const seedDatabase = async () => {
   try {
     // 1. Connect to Database
     await mongoose.connect(config.database.uri as string);
-    console.log("Connected to DB for seeding...");
+    //console.log("Connected to DB for seeding...");
 
     // 2. Clear Existing Data (Careful! This wipes these collections)
     await Instrument.deleteMany({});
     await Module.deleteMany({});
     await Lesson.deleteMany({});
-    console.log("Cleared old curriculum data.");
+    //console.log("Cleared old curriculum data.");
 
     // 3. Create an Instrument
- const instrument = await Instrument.create({
+    const instrument = await Instrument.create({
       instrumentTitle: "Piano Basics",        // Changed from title
       instrumentDescription: "Fundamentals",  // Changed from description
       instructor: "Master Mozart",
       level: "beginner",                      // Try lowercase 'beginner' 
       thumbnail: "piano-thumb.jpg",
-      modules: [] 
+      modules: []
     });
 
     // 4. Create Modules (Formerly Lessons)
@@ -73,10 +73,10 @@ const seedDatabase = async () => {
       $push: { lessons: { $each: [lesson1._id, lesson2._id] } }
     });
 
-    console.log("✅ Database seeded successfully!");
-    console.log(`Instrument ID: ${instrument._id}`);
-    console.log(`Module ID: ${module1._id}`);
-    console.log(`Lesson ID: ${lesson1._id}`);
+    //console.log("✅ Database seeded successfully!");
+    //console.log(`Instrument ID: ${instrument._id}`);
+    //console.log(`Module ID: ${module1._id}`);
+    //console.log(`Lesson ID: ${lesson1._id}`);
 
     process.exit(0);
   } catch (error) {

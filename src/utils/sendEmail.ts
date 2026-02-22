@@ -72,7 +72,7 @@ export const mailer = async ({ subject, template, email }: MailerOptions): Promi
             //       }
 
             //       if (config.env === 'development') {
-            //             console.log('Email sent via Brevo API:', response.data);
+            //             //console.log('Email sent via Brevo API:', response.data);
             //       }
             // } catch (apiError) {
             //       console.error('Brevo API fallback failed:', apiError);
@@ -100,5 +100,5 @@ export const mailer = async ({ subject, template, email }: MailerOptions): Promi
 //             }
 //       );
 
-//       config.env === 'development' && console.log(response.data);
+//       config.env === 'development' && //console.log(response.data);
 // };

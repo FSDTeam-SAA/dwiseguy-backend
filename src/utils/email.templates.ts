@@ -1,100 +1,119 @@
+import config from "../config/config";
+
 export const forgetPasswordOtpTemplate = (
-      name: string,
-      otp: string | number,
-      title: string = 'Reset Your Piano Academy Password',
+  name: string,
+  otp: string | number,
+  title: string = "Reset Your Password",
 ): string => {
-      return `
+  const expiryMinutes = 5;
+
+  return `
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
-      margin: 0;
-      padding: 0;
-      color: #333;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background-color: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 30px;
-    }
-    h1 {
-      font-size: 22px;
-      color: #1a1a1a;
-      margin-bottom: 20px;
-    }
-    p {
-      font-size: 16px;
-      line-height: 1.6;
-      margin: 10px 0;
-    }
-    .otp {
-      display: block;
-      width: fit-content;
-      margin: 20px auto;
-      font-size: 28px;
-      font-weight: bold;
-      color: #d35400;
-      letter-spacing: 4px;
-      padding: 10px 20px;
-      border: 2px dashed #d35400;
-      border-radius: 8px;
-      text-align: center;
-    }
-    .footer {
-      font-size: 14px;
-      color: #777;
-      margin-top: 30px;
-      text-align: center;
-    }
-    .note {
-      font-size: 14px;
-      color: #555;
-      margin-top: 20px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${title}</title>
 </head>
-<body>
-  <div class="container">
-    <h1>Hello ${name},</h1>
-    <p>We received a request to reset your Piano Academy account password.</p>
-    <p>Please use the following OTP to reset your password:</p>
-    <div class="otp">${otp}</div>
-    <p class="note">This OTP is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
-    <p>If you did not request a password reset, you can safely ignore this email.</p>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} Piano Academy. All rights reserved.
-    </div>
-  </div>
+
+<body style="margin:0;padding:0;background-color:#f2f4f6;font-family:Arial,Helvetica,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f2f4f6;padding:40px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Main Container -->
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);overflow:hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background:#111827;padding:24px;text-align:center;">
+              <h2 style="color:#ffffff;margin:0;font-weight:600;letter-spacing:1px;">
+                🎵 Bao Music Academy
+              </h2>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 32px;color:#333333;">
+
+              <h3 style="margin-top:0;font-size:20px;">Hello ${name},</h3>
+
+              <p style="font-size:16px;line-height:1.6;color:#555;">
+                We received a request to reset your account password. 
+                Please use the One-Time Password (OTP) below to continue.
+              </p>
+
+              <!-- OTP Box -->
+              <div style="margin:32px 0;text-align:center;">
+                <span style="
+                  display:inline-block;
+                  font-size:32px;
+                  letter-spacing:6px;
+                  font-weight:bold;
+                  padding:14px 28px;
+                  border-radius:10px;
+                  background:#f9fafb;
+                  border:2px solid #111827;
+                  color:#111827;
+                ">
+                  ${otp}
+                </span>
+              </div>
+
+              <p style="font-size:15px;color:#666;">
+                This OTP is valid for <strong>${expiryMinutes} minutes</strong>. 
+                For your security, do not share this code with anyone.
+              </p>
+
+              <p style="font-size:15px;color:#666;margin-top:24px;">
+                If you did not request a password reset, 
+                please ignore this email or contact our support team.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px;text-align:center;font-size:13px;color:#888;border-top:1px solid #eee;">
+              © ${new Date().getFullYear()} Piano Academy. All rights reserved.
+              <br/>
+              Need help? Contact support@baomusic.com
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Bottom spacing -->
+        <div style="height:40px;"></div>
+
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>
 `;
 };
 
 type AccountCreatedEmailArgs = {
-      email: string;
-      password: string;
-      username: string;
-      appName?: string;
-      loginUrl?: string;
+  email: string;
+  password: string;
+  username: string;
+  appName?: string;
+  loginUrl?: string;
 };
 
 export const accountCreatedEmailTemplate = ({
-      email,
-      password,
-      username,
-      appName = 'Piano Academy',
-      loginUrl = 'https://piano-academy.com/login',
+  email,
+  password,
+  username,
+  appName = 'Bao Music Academy',
+  loginUrl = config.frontendLoginUrl,
 }: AccountCreatedEmailArgs): string => {
-      return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -200,21 +219,21 @@ export const accountCreatedEmailTemplate = ({
 };
 
 export const adminNotificationTemplate = (
-    title: string,
-    data: Record<string, any>
+  title: string,
+  data: Record<string, any>
 ): string => {
-    // Generate table rows dynamically from the data object
-    const tableRows = Object.entries(data)
-        .map(
-            ([key, value]) => `
+  // Generate table rows dynamically from the data object
+  const tableRows = Object.entries(data)
+    .map(
+      ([key, value]) => `
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">${key}</td>
             <td style="padding: 10px; border-bottom: 1px solid #eee; color: #333;">${value}</td>
         </tr>`
-        )
-        .join('');
+    )
+    .join('');
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
