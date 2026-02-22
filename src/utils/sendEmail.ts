@@ -42,46 +42,47 @@ export const mailer = async ({ subject, template, email }: MailerOptions): Promi
             }
       } catch (smtpError) {
             if (config.env === 'development') {
-                  console.error('SMTP failed, falling back to Brevo API:', smtpError);
+                  console.error('SMTP connection failed:', smtpError);
+                  return
             }
 
-            try {
-                  // Fallback to Brevo API
-                  const response = await axios.post(
-                        'https://api.brevo.com/v3/smtp/email',
-                        {
-                              sender: {
-                                    name: config.brevo.senderName || 'Dream Builders',
-                                    email: config.brevo.senderEmail || 'sabbir.dev001@gmail.com',
-                              },
-                              to: [{ email }],
-                              subject,
-                              htmlContent: template,
-                        },
-                        {
-                              headers: {
-                                    'api-key': config.brevo.auth.apiKey,
-                                    'Content-Type': 'application/json',
-                              },
-                        }
-                  );
+            // try {
+            //       // Fallback to Brevo API
+            //       const response = await axios.post(
+            //             'https://api.brevo.com/v3/smtp/email',
+            //             {
+            //                   sender: {
+            //                         name: config.brevo.senderName || 'Dream Builders',
+            //                         email: config.brevo.senderEmail || 'sabbir.dev001@gmail.com',
+            //                   },
+            //                   to: [{ email }],
+            //                   subject,
+            //                   htmlContent: template,
+            //             },
+            //             {
+            //                   headers: {
+            //                         'api-key': config.brevo.auth.apiKey,
+            //                         'Content-Type': 'application/json',
+            //                   },
+            //             }
+            //       );
 
-                  if (response.status !== StatusCodes.OK && response.status !== StatusCodes.CREATED) {
-                        throw new AppError(500, 'Failed to send email via Brevo API');
-                  }
+            //       if (response.status !== StatusCodes.OK && response.status !== StatusCodes.CREATED) {
+            //             throw new AppError(500, 'Failed to send email via Brevo API');
+            //       }
 
-                  if (config.env === 'development') {
-                        console.log('Email sent via Brevo API:', response.data);
-                  }
-            } catch (apiError) {
-                  console.error('Brevo API fallback failed:', apiError);
-                  throw new AppError(500, 'Failed to send email via SMTP and API');
-            }
+            //       if (config.env === 'development') {
+            //             console.log('Email sent via Brevo API:', response.data);
+            //       }
+            // } catch (apiError) {
+            //       console.error('Brevo API fallback failed:', apiError);
+            //       throw new AppError(500, 'Failed to send email via SMTP and API');
+            // }
       }
 };
 
 
-// //!Use breve email service webhook
+// //!Use breve email service webhook if nodemailer is not working
 // export const mailer = async ({ subject, template, email }: MailerOptions): Promise<void> => {
 //       const response = await axios.post(
 //             'https://api.brevo.com/v3/smtp/email',
