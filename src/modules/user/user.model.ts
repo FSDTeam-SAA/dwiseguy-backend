@@ -23,7 +23,7 @@ const userSchema: Schema = new Schema<IUser>(
                   type: String,
                   select: 0,
                   required: true,
-                  // validate: passwordValidator
+                  validate: passwordValidator
             },
             username: { type: String, required: true, unique: true },
             age: { type: Number, default: null },

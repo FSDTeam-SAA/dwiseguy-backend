@@ -88,7 +88,7 @@ export const getAllInstruments = catchAsync(async (req: Request, res: Response) 
 export const updateInstrument = catchAsync(async (req: Request, res: Response) => {
       const id = req.params.id as string;
       const value = req.body;
-      console.log(req.body);
+      //console.log(req.body);
 
       const image = req.file as Express.Multer.File;
 

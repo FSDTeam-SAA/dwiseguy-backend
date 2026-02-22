@@ -11,7 +11,7 @@ import AppError from '../../errors/AppError';
 // Admin Control
 const createModule = catchAsync(async (req: Request, res: Response) => {
   const files = req.files as any;
-  
+
   if (!req.body.data) {
     throw new AppError(StatusCodes.BAD_REQUEST, "Module data is required");
   }
@@ -22,11 +22,11 @@ const createModule = catchAsync(async (req: Request, res: Response) => {
 
   // Handle optional image uploads for the Module
   if (files?.images) {
-    const imageUploadPromises = files.images.map((file: any) => 
+    const imageUploadPromises = files.images.map((file: any) =>
       uploadToCloudinary(file.path, 'image')
     );
     const imageResults = await Promise.all(imageUploadPromises);
-    
+
     images = imageResults
       .filter((res): res is { url: string; public_id: string } => res !== null)
       .map(res => ({ url: res.url, public_id: res.public_id }));
@@ -34,7 +34,7 @@ const createModule = catchAsync(async (req: Request, res: Response) => {
 
   const finalPayload = {
     ...moduleData,
-    images: images, 
+    images: images,
   };
 
   const result = await moduleService.createModuleIntoDb(finalPayload);
@@ -75,8 +75,8 @@ const deleteModule = catchAsync(async (req: Request, res: Response) => {
 const getModulesByInstrument = catchAsync(async (req: Request, res: Response) => {
   const { instrumentId } = req.params;
 
-  console.log("Instrument ID from Params:", instrumentId);
-  const modules = await moduleService.getModulesByInstrumentFromDb(instrumentId); 
+  //console.log("Instrument ID from Params:", instrumentId);
+  const modules = await moduleService.getModulesByInstrumentFromDb(instrumentId);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -101,9 +101,9 @@ const getSingleModule = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const moduleController = {
-    createModule,
-    updateModule,
-    deleteModule,
-    getModulesByInstrument,
-    getSingleModule
+  createModule,
+  updateModule,
+  deleteModule,
+  getModulesByInstrument,
+  getSingleModule
 };

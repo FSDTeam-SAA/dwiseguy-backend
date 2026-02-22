@@ -8,7 +8,7 @@ import { UserProgress } from '../progress/progress.model';
 import { Module } from '../module/module.model';
 
 export const getQuizForStudentService = async (quizId: string, studentId: string) => {
-      console.log('student', studentId);
+      //console.log('student', studentId);
 
       const quiz = await Quiz.findById(quizId);
       if (!quiz) {
@@ -16,13 +16,13 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       }
 
       const module = await Module.findById(quiz.moduleId);
-      console.log('mosule', module);
+      //console.log('mosule', module);
       if (!module || module.lessons.length === 0) {
             throw new AppError(404, 'Module not found or has no lessons');
       }
 
       const lastLessonOfModule = module.lessons[module.lessons.length - 1].toString();
-      console.log('lastlesson', lastLessonOfModule);
+      //console.log('lastlesson', lastLessonOfModule);
 
       const studentProgress = await UserProgress.findOne({
             userId: studentId,
@@ -35,7 +35,7 @@ export const getQuizForStudentService = async (quizId: string, studentId: string
       const isLastLessonCompleted = studentProgress.completedLessons.some(
             (lessonId) => lessonId.toString() === lastLessonOfModule
       );
-      console.log('hgfyfytf', studentProgress.completedLessons);
+      //console.log('hgfyfytf', studentProgress.completedLessons);
       if (!isLastLessonCompleted) {
             throw new AppError(400, 'You have not completed the last lesson of this module yets');
       }

@@ -64,4 +64,5 @@ export default {
 
       // Frontend
       frontendUrl: process.env.FRONTEND_URL,
+      frontendLoginUrl: process.env.FRONTEND_LOGIN_URL,
 };
