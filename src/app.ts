@@ -18,7 +18,9 @@ app.use(
       cors({
             origin: [
                   'http://localhost:3000',
+                  'http://localhost:3001',
                   'https://baomusic-snowy.vercel.app', // REMOVED the trailing slash
+                  'https://baomusic-dashboard.vercel.app', // REMOVED the trailing slash
                   config.frontendUrl   ?? ''    // Ensure this is just the domain
             ],
             methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
