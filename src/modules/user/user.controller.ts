@@ -111,6 +111,7 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
             data: {
                   id: user._id,
                   email: user.email,
+                  role: user.role,
                   accessToken: accessToken,
                   refreshToken: refreshToken,
             },
