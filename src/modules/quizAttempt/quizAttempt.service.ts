@@ -170,21 +170,20 @@ function getStatusMessage(status: string, percentage: number): string {
 }
 
 export const getDetailedQuizResultsService = async (quizId: string, studentId: string) => {
-      const attempt = await QuizAttempt.findOne({ quizId, studentId }).populate(
-            'quizId',
-            'quizName timeLimit totalMarks passingPercentage'
-      );
+      const attempt = await QuizAttempt.findOne({ quizId, studentId })
+            .sort({ submittedAt: -1 })
+            .populate('quizId', 'quizName timeLimit totalMarks passingPercentage');
 
       if (!attempt) {
             throw new AppError(404, 'Quiz attempt not found');
       }
 
       return {
-            quizName: (attempt?.quizId as any)?.quizName,
+            quizName: (attempt.quizId as any)?.quizName,
             score: attempt.score,
             totalMarks: attempt.totalMarks,
             percentage: attempt.percentage,
-            passingPercentage: (attempt?.quizId as any)?.passingPercentage,
+            passingPercentage: (attempt.quizId as any)?.passingPercentage,
             status: attempt.status,
             timeTaken: attempt.timeTaken,
             submittedAt: attempt.submittedAt,
