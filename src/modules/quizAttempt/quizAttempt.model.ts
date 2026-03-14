@@ -18,7 +18,6 @@ const studentAnswerSchema = new Schema<IStudentAnswer>(
             },
             correctOption: {
                   type: String,
-                  required: true,
             },
       },
       { _id: false }
